@@ -26,6 +26,7 @@ This file is written for practical C++17/C++20 use. It emphasizes invariants, re
 - [18. ICPC-Level Problem Solving](#18-icpc-level-problem-solving)
 - [19. Hardest / Research-Oriented Overviews](#19-hardest-research-oriented-overviews)
 - [20. Final Guides](#20-final-guides)
+- [21. Topic-Wise Code Schedule and C++ Template Vault](#21-topic-wise-code-schedule-and-c-template-vault)
 
 ## How to Study This Handbook
 
@@ -3116,3 +3117,3486 @@ This section is for select tools under pressure and revise systematically.
 ## Short Index of Advanced Topics Included
 
 This handbook includes advanced coverage and recognition notes for Heavy-Light Decomposition, centroid decomposition, virtual trees, DSU on tree, persistent segment trees, wavelet trees, Segment Tree Beats, Li Chao trees, dynamic CHT, rollback DSU, offline dynamic connectivity, Dinic, Hopcroft-Karp, min-cost max-flow, Aho-Corasick, suffix arrays, suffix automata, palindromic automata, Miller-Rabin, Pollard Rho, FFT/NTT, SOS DP, subset convolution, Sprague-Grundy theory, Link-Cut Trees, Euler Tour Trees, Top Trees, Blossom, Gomory-Hu trees, dominator trees, SMAWK, Berlekamp-Massey, FWHT, matroid intersection, and min-plus convolution.
+
+
+
+## 21. Topic-Wise Code Schedule and C++ Template Vault
+
+Use this section as the code-first companion to the theory above. The goal is to practice in a staged order: first implement simple patterns from memory, then combine them, then move to ICPC-hard templates.
+
+All snippets assume C++17 unless stated otherwise.
+
+### Code Practice Schedule
+
+| Level | Study order | Must-code templates |
+|---|---|---|
+| Early 1 | STL, arrays, strings, sorting, binary search | starter template, lower/upper bound, comparator, prefix sum, difference array |
+| Early 2 | Two pointers, sliding window, stacks, queues | fixed/variable window, monotonic stack, monotonic queue, heap patterns |
+| Early 3 | Recursion and brute force | subsets, permutations, combinations, backtracking skeleton |
+| Early 4 | Basic graphs and basic DP | BFS, DFS, connected components, grid BFS, 0/1 knapsack, LIS, LCS |
+| Moderate 1 | Range queries | Fenwick tree, segment tree, lazy propagation, sparse table, sqrt decomposition |
+| Moderate 2 | Trees | tree DFS, diameter, binary lifting LCA, Euler tour, trie, DSU |
+| Moderate 3 | Shortest paths and MST | Dijkstra, Bellman-Ford, Floyd-Warshall, 0-1 BFS, Kruskal, Prim |
+| Moderate 4 | Strings and number theory | KMP, Z, rolling hash, sieve, modular inverse, nCr, CRT |
+| Advanced 1 | Graph structure | SCC, bridges, articulation points, 2-SAT, Euler path, functional graph lifting |
+| Advanced 2 | Flow and matching | Dinic, min-cost max-flow, Kuhn, Hopcroft-Karp, Hungarian |
+| Advanced 3 | Tree/range hard tools | HLD, centroid decomposition, DSU on tree, persistent segment tree, wavelet tree |
+| Advanced 4 | DP optimization | SOS DP, divide-and-conquer DP, Knuth optimization, CHT, Li Chao tree |
+| ICPC-hard | Mixed advanced topics | rollback DSU, offline dynamic connectivity, suffix array, suffix automaton, Aho-Corasick, NTT, Pollard Rho, geometry, Link-Cut Tree |
+
+### Starter and Utility Templates
+
+#### Contest Starter
+
+Use this for almost every competitive programming solution.
+
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+
+using ll = long long;
+using pii = pair<int, int>;
+using pll = pair<long long, long long>;
+
+const int INF = 1e9;
+const long long LINF = 4e18;
+
+int main() {
+    ios::sync_with_stdio(false);
+    cin.tie(nullptr);
+
+    int tc = 1;
+    // cin >> tc;
+    while (tc--) {
+        // solve();
+    }
+    return 0;
+}
+```
+
+#### Coordinate Compression
+
+Use when values are large but only their relative order matters. Complexity: `O(n log n)`.
+
+```cpp
+vector<int> compress(vector<long long> a) {
+    vector<long long> vals = a;
+    sort(vals.begin(), vals.end());
+    vals.erase(unique(vals.begin(), vals.end()), vals.end());
+
+    vector<int> id(a.size());
+    for (int i = 0; i < (int)a.size(); i++) {
+        id[i] = lower_bound(vals.begin(), vals.end(), a[i]) - vals.begin();
+    }
+    return id;
+}
+```
+
+#### Custom Hash for Unordered Maps
+
+Use when adversarial tests can break `unordered_map` with many collisions.
+
+```cpp
+struct CustomHash {
+    static uint64_t splitmix64(uint64_t x) {
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+    size_t operator()(uint64_t x) const {
+        static const uint64_t seed =
+            chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + seed);
+    }
+};
+
+// unordered_map<long long, int, CustomHash> mp;
+```
+
+### Early Level: Arrays, Searching, Sorting, Windows
+
+#### Prefix Sum
+
+Use for static range-sum queries. Query complexity: `O(1)` after `O(n)` build.
+
+```cpp
+vector<long long> buildPrefix(const vector<int>& a) {
+    int n = a.size();
+    vector<long long> pref(n + 1, 0);
+    for (int i = 0; i < n; i++) pref[i + 1] = pref[i] + a[i];
+    return pref;
+}
+
+long long rangeSum(const vector<long long>& pref, int l, int r) {
+    // inclusive l, inclusive r, 0-based
+    return pref[r + 1] - pref[l];
+}
+```
+
+#### 2D Prefix Sum
+
+Use for static rectangle-sum queries. Query complexity: `O(1)` after `O(nm)` build.
+
+```cpp
+vector<vector<long long>> build2DPrefix(const vector<vector<int>>& a) {
+    int n = a.size(), m = a[0].size();
+    vector<vector<long long>> pref(n + 1, vector<long long>(m + 1));
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            pref[i + 1][j + 1] = a[i][j] + pref[i][j + 1]
+                                + pref[i + 1][j] - pref[i][j];
+        }
+    }
+    return pref;
+}
+
+long long rectSum(const vector<vector<long long>>& pref,
+                  int r1, int c1, int r2, int c2) {
+    // inclusive corners, 0-based
+    return pref[r2 + 1][c2 + 1] - pref[r1][c2 + 1]
+         - pref[r2 + 1][c1] + pref[r1][c1];
+}
+```
+
+#### Difference Array
+
+Use for many offline range additions and final point values. Complexity: `O(n + q)`.
+
+```cpp
+vector<long long> applyRangeAdds(int n, vector<array<int, 3>> queries) {
+    vector<long long> diff(n + 1);
+    for (auto [l, r, x] : queries) {
+        diff[l] += x;
+        if (r + 1 < n) diff[r + 1] -= x;
+    }
+    vector<long long> a(n);
+    long long cur = 0;
+    for (int i = 0; i < n; i++) {
+        cur += diff[i];
+        a[i] = cur;
+    }
+    return a;
+}
+```
+
+#### Binary Search on Answer
+
+Use only when feasibility is monotonic: if answer `x` works, then every larger or smaller value also works.
+
+```cpp
+long long firstTrue(long long lo, long long hi, function<bool(long long)> ok) {
+    // returns first x in [lo, hi] with ok(x) == true
+    while (lo < hi) {
+        long long mid = lo + (hi - lo) / 2;
+        if (ok(mid)) hi = mid;
+        else lo = mid + 1;
+    }
+    return lo;
+}
+```
+
+#### Ternary Search on Unimodal Integer Function
+
+Use when function decreases then increases, or increases then decreases. Do not use if the function is not unimodal.
+
+```cpp
+long long ternaryMin(long long l, long long r, function<long long(long long)> f) {
+    while (r - l > 3) {
+        long long m1 = l + (r - l) / 3;
+        long long m2 = r - (r - l) / 3;
+        if (f(m1) <= f(m2)) r = m2 - 1;
+        else l = m1 + 1;
+    }
+    long long best = l;
+    for (long long x = l; x <= r; x++) {
+        if (f(x) < f(best)) best = x;
+    }
+    return best;
+}
+```
+
+#### Lower Bound and Upper Bound Patterns
+
+Use `lower_bound` for first `>= x`; use `upper_bound` for first `> x`.
+
+```cpp
+int firstGreaterEqual(const vector<int>& a, int x) {
+    return lower_bound(a.begin(), a.end(), x) - a.begin();
+}
+
+int firstGreaterThan(const vector<int>& a, int x) {
+    return upper_bound(a.begin(), a.end(), x) - a.begin();
+}
+
+int countInSortedRange(const vector<int>& a, int lo, int hi) {
+    return upper_bound(a.begin(), a.end(), hi)
+         - lower_bound(a.begin(), a.end(), lo);
+}
+```
+
+#### Basic Sorting Implementations
+
+Use these for learning. In contests, prefer `sort`, `stable_sort`, or specialized linear sorts when constraints justify them.
+
+```cpp
+void bubbleSort(vector<int>& a) {
+    int n = a.size();
+    for (int i = 0; i < n; i++) {
+        bool changed = false;
+        for (int j = 1; j < n - i; j++) {
+            if (a[j - 1] > a[j]) {
+                swap(a[j - 1], a[j]);
+                changed = true;
+            }
+        }
+        if (!changed) break;
+    }
+}
+
+void selectionSort(vector<int>& a) {
+    int n = a.size();
+    for (int i = 0; i < n; i++) {
+        int best = i;
+        for (int j = i + 1; j < n; j++) if (a[j] < a[best]) best = j;
+        swap(a[i], a[best]);
+    }
+}
+
+void insertionSort(vector<int>& a) {
+    for (int i = 1; i < (int)a.size(); i++) {
+        int x = a[i], j = i - 1;
+        while (j >= 0 && a[j] > x) {
+            a[j + 1] = a[j];
+            j--;
+        }
+        a[j + 1] = x;
+    }
+}
+```
+
+#### Merge Sort
+
+```cpp
+void mergeSort(vector<int>& a, int l, int r) {
+    if (r - l <= 1) return;
+    int m = (l + r) / 2;
+    mergeSort(a, l, m);
+    mergeSort(a, m, r);
+    vector<int> tmp;
+    int i = l, j = m;
+    while (i < m || j < r) {
+        if (j == r || (i < m && a[i] <= a[j])) tmp.push_back(a[i++]);
+        else tmp.push_back(a[j++]);
+    }
+    copy(tmp.begin(), tmp.end(), a.begin() + l);
+}
+```
+
+#### Randomized Quicksort
+
+```cpp
+void quickSort(vector<int>& a, int l, int r) {
+    if (r - l <= 1) return;
+    static mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+    int pivot = a[uniform_int_distribution<int>(l, r - 1)(rng)];
+    int i = l, lt = l, gt = r - 1;
+    while (i <= gt) {
+        if (a[i] < pivot) swap(a[i++], a[lt++]);
+        else if (a[i] > pivot) swap(a[i], a[gt--]);
+        else i++;
+    }
+    quickSort(a, l, lt);
+    quickSort(a, gt + 1, r);
+}
+```
+
+#### Counting Sort
+
+Use when values are integers in a small range.
+
+```cpp
+vector<int> countingSort(const vector<int>& a, int minVal, int maxVal) {
+    vector<int> cnt(maxVal - minVal + 1), out;
+    for (int x : a) cnt[x - minVal]++;
+    for (int i = 0; i < (int)cnt.size(); i++) {
+        while (cnt[i]--) out.push_back(i + minVal);
+    }
+    return out;
+}
+```
+
+#### Radix Sort for Nonnegative Integers
+
+```cpp
+void radixSort(vector<unsigned int>& a) {
+    vector<unsigned int> b(a.size());
+    const int B = 8, MASK = (1 << B) - 1;
+    for (int shift = 0; shift < 32; shift += B) {
+        vector<int> cnt(1 << B);
+        for (unsigned int x : a) cnt[(x >> shift) & MASK]++;
+        for (int i = 1; i < (1 << B); i++) cnt[i] += cnt[i - 1];
+        for (int i = (int)a.size() - 1; i >= 0; i--) {
+            b[--cnt[(a[i] >> shift) & MASK]] = a[i];
+        }
+        a.swap(b);
+    }
+}
+```
+
+#### Merge Sort Inversion Count
+
+Use to count pairs `i < j` with `a[i] > a[j]`. Complexity: `O(n log n)`.
+
+```cpp
+long long mergeCount(vector<int>& a, int l, int r) {
+    if (r - l <= 1) return 0;
+    int m = (l + r) / 2;
+    long long inv = mergeCount(a, l, m) + mergeCount(a, m, r);
+    vector<int> tmp;
+    int i = l, j = m;
+    while (i < m || j < r) {
+        if (j == r || (i < m && a[i] <= a[j])) tmp.push_back(a[i++]);
+        else {
+            inv += m - i;
+            tmp.push_back(a[j++]);
+        }
+    }
+    copy(tmp.begin(), tmp.end(), a.begin() + l);
+    return inv;
+}
+```
+
+#### Quickselect
+
+Use for kth smallest average `O(n)`. Worst case is `O(n^2)` unless randomized.
+
+```cpp
+int kthSmallest(vector<int> a, int k) {
+    // k is 0-based
+    mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+    int l = 0, r = (int)a.size() - 1;
+    while (l <= r) {
+        int pivot = a[uniform_int_distribution<int>(l, r)(rng)];
+        int i = l, lt = l, gt = r;
+        while (i <= gt) {
+            if (a[i] < pivot) swap(a[i++], a[lt++]);
+            else if (a[i] > pivot) swap(a[i], a[gt--]);
+            else i++;
+        }
+        if (k < lt) r = lt - 1;
+        else if (k > gt) l = gt + 1;
+        else return a[k];
+    }
+    return -1;
+}
+```
+
+#### Sliding Window, Variable Size
+
+Use when the condition is monotonic as the left pointer moves.
+
+```cpp
+int longestAtMostKDistinct(const string& s, int k) {
+    vector<int> freq(256);
+    int distinct = 0, ans = 0;
+    for (int l = 0, r = 0; r < (int)s.size(); r++) {
+        if (freq[(unsigned char)s[r]]++ == 0) distinct++;
+        while (distinct > k) {
+            if (--freq[(unsigned char)s[l]] == 0) distinct--;
+            l++;
+        }
+        ans = max(ans, r - l + 1);
+    }
+    return ans;
+}
+```
+
+#### Kadane's Algorithm
+
+Use for maximum subarray sum. Complexity: `O(n)`.
+
+```cpp
+long long maxSubarraySum(const vector<int>& a) {
+    long long best = LLONG_MIN, cur = 0;
+    for (int x : a) {
+        cur = max<long long>(x, cur + x);
+        best = max(best, cur);
+    }
+    return best;
+}
+```
+
+#### Monotonic Stack
+
+Use for next smaller/greater element, span problems, and histogram-like tasks.
+
+```cpp
+vector<int> nextSmallerToRight(const vector<int>& a) {
+    int n = a.size();
+    vector<int> nxt(n, n);
+    vector<int> st;
+    for (int i = 0; i < n; i++) {
+        while (!st.empty() && a[i] < a[st.back()]) {
+            nxt[st.back()] = i;
+            st.pop_back();
+        }
+        st.push_back(i);
+    }
+    return nxt;
+}
+```
+
+#### Monotonic Queue
+
+Use for sliding-window minimum or maximum in `O(n)`.
+
+```cpp
+vector<int> slidingWindowMax(const vector<int>& a, int k) {
+    deque<int> dq;
+    vector<int> ans;
+    for (int i = 0; i < (int)a.size(); i++) {
+        while (!dq.empty() && dq.front() <= i - k) dq.pop_front();
+        while (!dq.empty() && a[dq.back()] <= a[i]) dq.pop_back();
+        dq.push_back(i);
+        if (i >= k - 1) ans.push_back(a[dq.front()]);
+    }
+    return ans;
+}
+```
+
+### Early Level: Recursion and Backtracking
+
+#### Subset Generation
+
+```cpp
+void genSubsets(int i, const vector<int>& a, vector<int>& cur) {
+    if (i == (int)a.size()) {
+        // use cur
+        return;
+    }
+    genSubsets(i + 1, a, cur);
+    cur.push_back(a[i]);
+    genSubsets(i + 1, a, cur);
+    cur.pop_back();
+}
+```
+
+#### Permutations with Duplicates Removed
+
+```cpp
+vector<vector<int>> uniquePermutations(vector<int> a) {
+    sort(a.begin(), a.end());
+    vector<vector<int>> ans;
+    do {
+        ans.push_back(a);
+    } while (next_permutation(a.begin(), a.end()));
+    return ans;
+}
+```
+
+#### Combination Backtracking
+
+```cpp
+void combinations(int start, int n, int k, vector<int>& cur) {
+    if ((int)cur.size() == k) {
+        // use cur
+        return;
+    }
+    for (int x = start; x <= n; x++) {
+        cur.push_back(x);
+        combinations(x + 1, n, k, cur);
+        cur.pop_back();
+    }
+}
+```
+
+#### N-Queens
+
+```cpp
+void solveQueens(int row, int n, vector<string>& board,
+                 vector<int>& col, vector<int>& diag1, vector<int>& diag2,
+                 vector<vector<string>>& ans) {
+    if (row == n) {
+        ans.push_back(board);
+        return;
+    }
+    for (int c = 0; c < n; c++) {
+        if (col[c] || diag1[row + c] || diag2[row - c + n - 1]) continue;
+        board[row][c] = 'Q';
+        col[c] = diag1[row + c] = diag2[row - c + n - 1] = 1;
+        solveQueens(row + 1, n, board, col, diag1, diag2, ans);
+        col[c] = diag1[row + c] = diag2[row - c + n - 1] = 0;
+        board[row][c] = '.';
+    }
+}
+```
+
+### Early to Moderate Level: Dynamic Programming
+
+#### 0/1 Knapsack
+
+Use when each item can be selected once. Complexity: `O(nW)`.
+
+```cpp
+long long knapsack01(const vector<int>& wt, const vector<int>& val, int W) {
+    vector<long long> dp(W + 1, 0);
+    for (int i = 0; i < (int)wt.size(); i++) {
+        for (int cap = W; cap >= wt[i]; cap--) {
+            dp[cap] = max(dp[cap], dp[cap - wt[i]] + val[i]);
+        }
+    }
+    return dp[W];
+}
+```
+
+#### Unbounded Knapsack
+
+Use when each item can be chosen many times.
+
+```cpp
+long long unboundedKnapsack(const vector<int>& wt, const vector<int>& val, int W) {
+    vector<long long> dp(W + 1, 0);
+    for (int cap = 0; cap <= W; cap++) {
+        for (int i = 0; i < (int)wt.size(); i++) {
+            if (cap >= wt[i]) dp[cap] = max(dp[cap], dp[cap - wt[i]] + val[i]);
+        }
+    }
+    return dp[W];
+}
+```
+
+#### Longest Increasing Subsequence
+
+Complexity: `O(n log n)`.
+
+```cpp
+int lisLength(const vector<int>& a) {
+    vector<int> tail;
+    for (int x : a) {
+        auto it = lower_bound(tail.begin(), tail.end(), x);
+        if (it == tail.end()) tail.push_back(x);
+        else *it = x;
+    }
+    return tail.size();
+}
+```
+
+#### Longest Common Subsequence
+
+Complexity: `O(nm)`.
+
+```cpp
+int lcs(const string& a, const string& b) {
+    int n = a.size(), m = b.size();
+    vector<vector<int>> dp(n + 1, vector<int>(m + 1));
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= m; j++) {
+            if (a[i - 1] == b[j - 1]) dp[i][j] = dp[i - 1][j - 1] + 1;
+            else dp[i][j] = max(dp[i - 1][j], dp[i][j - 1]);
+        }
+    }
+    return dp[n][m];
+}
+```
+
+#### Edit Distance
+
+```cpp
+int editDistance(const string& a, const string& b) {
+    int n = a.size(), m = b.size();
+    vector<vector<int>> dp(n + 1, vector<int>(m + 1));
+    for (int i = 0; i <= n; i++) dp[i][0] = i;
+    for (int j = 0; j <= m; j++) dp[0][j] = j;
+    for (int i = 1; i <= n; i++) {
+        for (int j = 1; j <= m; j++) {
+            dp[i][j] = min({dp[i - 1][j] + 1,
+                            dp[i][j - 1] + 1,
+                            dp[i - 1][j - 1] + (a[i - 1] != b[j - 1])});
+        }
+    }
+    return dp[n][m];
+}
+```
+
+#### Interval DP Skeleton
+
+Use for merging intervals, matrix chain multiplication, and palindrome partitions.
+
+```cpp
+long long intervalDP(const vector<int>& a) {
+    int n = a.size();
+    vector<vector<long long>> dp(n, vector<long long>(n));
+    for (int len = 2; len <= n; len++) {
+        for (int l = 0; l + len - 1 < n; l++) {
+            int r = l + len - 1;
+            dp[l][r] = LLONG_MAX / 4;
+            for (int mid = l; mid < r; mid++) {
+                long long cost = dp[l][mid] + dp[mid + 1][r]; // + merge cost
+                dp[l][r] = min(dp[l][r], cost);
+            }
+        }
+    }
+    return dp[0][n - 1];
+}
+```
+
+#### Bitmask TSP DP
+
+Use when `n <= 20` and state is subset + last node.
+
+```cpp
+long long tsp(const vector<vector<int>>& dist) {
+    int n = dist.size();
+    const long long INFLL = 4e18;
+    vector<vector<long long>> dp(1 << n, vector<long long>(n, INFLL));
+    dp[1][0] = 0;
+    for (int mask = 1; mask < (1 << n); mask++) {
+        for (int u = 0; u < n; u++) if (dp[mask][u] < INFLL) {
+            for (int v = 0; v < n; v++) if (!(mask & (1 << v))) {
+                dp[mask | (1 << v)][v] =
+                    min(dp[mask | (1 << v)][v], dp[mask][u] + dist[u][v]);
+            }
+        }
+    }
+    long long ans = INFLL;
+    for (int u = 0; u < n; u++) ans = min(ans, dp[(1 << n) - 1][u] + dist[u][0]);
+    return ans;
+}
+```
+
+#### Digit DP Skeleton
+
+Use for counting numbers up to `N` with digit constraints.
+
+```cpp
+string S;
+long long memo[20][2][2][200];
+bool seen[20][2][2][200];
+
+long long dfsDigit(int pos, bool tight, bool started, int sum) {
+    if (pos == (int)S.size()) return started && sum % 3 == 0;
+    long long& res = memo[pos][tight][started][sum];
+    if (seen[pos][tight][started][sum]) return res;
+    seen[pos][tight][started][sum] = true;
+    res = 0;
+    int lim = tight ? S[pos] - '0' : 9;
+    for (int d = 0; d <= lim; d++) {
+        res += dfsDigit(pos + 1, tight && d == lim,
+                        started || d != 0, (sum + d) % 3);
+    }
+    return res;
+}
+
+long long countUpTo(long long n) {
+    S = to_string(n);
+    memset(seen, 0, sizeof(seen));
+    return dfsDigit(0, true, false, 0);
+}
+```
+
+#### SOS DP
+
+Use for subset sums over all submasks. Complexity: `O(n 2^n)`.
+
+```cpp
+vector<long long> sumOverSubsets(vector<long long> f, int n) {
+    for (int bit = 0; bit < n; bit++) {
+        for (int mask = 0; mask < (1 << n); mask++) {
+            if (mask & (1 << bit)) f[mask] += f[mask ^ (1 << bit)];
+        }
+    }
+    return f;
+}
+```
+
+### Moderate Level: Range Query Data Structures
+
+#### Fenwick Tree / Binary Indexed Tree
+
+Use for point updates and prefix/range sums. Complexity: `O(log n)`.
+
+```cpp
+struct Fenwick {
+    int n;
+    vector<long long> bit;
+    Fenwick(int n = 0) { init(n); }
+    void init(int n_) {
+        n = n_;
+        bit.assign(n + 1, 0);
+    }
+    void add(int idx, long long val) {
+        for (++idx; idx <= n; idx += idx & -idx) bit[idx] += val;
+    }
+    long long sumPrefix(int idx) const {
+        long long res = 0;
+        for (++idx; idx > 0; idx -= idx & -idx) res += bit[idx];
+        return res;
+    }
+    long long rangeSum(int l, int r) const {
+        if (r < l) return 0;
+        return sumPrefix(r) - (l ? sumPrefix(l - 1) : 0);
+    }
+};
+```
+
+#### Fenwick Range Add and Range Sum
+
+Use two BITs to support range add and range sum in `O(log n)`.
+
+```cpp
+struct RangeFenwick {
+    int n;
+    Fenwick b1, b2;
+    RangeFenwick(int n = 0) { init(n); }
+    void init(int n_) {
+        n = n_;
+        b1.init(n);
+        b2.init(n);
+    }
+    void addInternal(Fenwick& b, int idx, long long val) {
+        if (idx < n) b.add(idx, val);
+    }
+    void rangeAdd(int l, int r, long long val) {
+        addInternal(b1, l, val);
+        addInternal(b1, r + 1, -val);
+        addInternal(b2, l, val * l);
+        addInternal(b2, r + 1, -val * (r + 1));
+    }
+    long long prefixSum(int idx) const {
+        return b1.sumPrefix(idx) * (idx + 1) - b2.sumPrefix(idx);
+    }
+    long long rangeSum(int l, int r) const {
+        return prefixSum(r) - (l ? prefixSum(l - 1) : 0);
+    }
+};
+```
+
+#### Iterative Segment Tree
+
+Use for static associative operations with point updates.
+
+```cpp
+struct SegTree {
+    int n;
+    vector<long long> seg;
+    SegTree(const vector<int>& a = {}) { if (!a.empty()) build(a); }
+    long long merge(long long x, long long y) { return x + y; }
+    void build(const vector<int>& a) {
+        n = a.size();
+        seg.assign(2 * n, 0);
+        for (int i = 0; i < n; i++) seg[n + i] = a[i];
+        for (int i = n - 1; i > 0; i--) seg[i] = merge(seg[i << 1], seg[i << 1 | 1]);
+    }
+    void update(int p, long long val) {
+        for (seg[p += n] = val; p > 1; p >>= 1) {
+            seg[p >> 1] = merge(seg[p], seg[p ^ 1]);
+        }
+    }
+    long long query(int l, int r) {
+        long long resL = 0, resR = 0;
+        for (l += n, r += n + 1; l < r; l >>= 1, r >>= 1) {
+            if (l & 1) resL = merge(resL, seg[l++]);
+            if (r & 1) resR = merge(seg[--r], resR);
+        }
+        return merge(resL, resR);
+    }
+};
+```
+
+#### Lazy Segment Tree for Range Add and Range Sum
+
+```cpp
+struct LazySegTree {
+    int n;
+    vector<long long> tree, lazy;
+    LazySegTree(int n = 0) { init(n); }
+    void init(int n_) {
+        n = n_;
+        tree.assign(4 * n, 0);
+        lazy.assign(4 * n, 0);
+    }
+    void push(int node, int l, int r) {
+        if (lazy[node] == 0) return;
+        tree[node] += lazy[node] * (r - l + 1);
+        if (l != r) {
+            lazy[node * 2] += lazy[node];
+            lazy[node * 2 + 1] += lazy[node];
+        }
+        lazy[node] = 0;
+    }
+    void add(int node, int l, int r, int ql, int qr, long long val) {
+        push(node, l, r);
+        if (qr < l || r < ql) return;
+        if (ql <= l && r <= qr) {
+            lazy[node] += val;
+            push(node, l, r);
+            return;
+        }
+        int mid = (l + r) / 2;
+        add(node * 2, l, mid, ql, qr, val);
+        add(node * 2 + 1, mid + 1, r, ql, qr, val);
+        tree[node] = tree[node * 2] + tree[node * 2 + 1];
+    }
+    long long query(int node, int l, int r, int ql, int qr) {
+        push(node, l, r);
+        if (qr < l || r < ql) return 0;
+        if (ql <= l && r <= qr) return tree[node];
+        int mid = (l + r) / 2;
+        return query(node * 2, l, mid, ql, qr)
+             + query(node * 2 + 1, mid + 1, r, ql, qr);
+    }
+};
+```
+
+#### Sparse Table for Idempotent Queries
+
+Use for static range min/max/gcd. Build `O(n log n)`, query `O(1)`.
+
+```cpp
+struct SparseTable {
+    vector<vector<int>> st;
+    vector<int> lg;
+    int merge(int a, int b) { return min(a, b); }
+    SparseTable(const vector<int>& a = {}) { if (!a.empty()) build(a); }
+    void build(const vector<int>& a) {
+        int n = a.size();
+        lg.assign(n + 1, 0);
+        for (int i = 2; i <= n; i++) lg[i] = lg[i / 2] + 1;
+        st.assign(lg[n] + 1, vector<int>(n));
+        st[0] = a;
+        for (int k = 1; k < (int)st.size(); k++) {
+            for (int i = 0; i + (1 << k) <= n; i++) {
+                st[k][i] = merge(st[k - 1][i], st[k - 1][i + (1 << (k - 1))]);
+            }
+        }
+    }
+    int query(int l, int r) {
+        int k = lg[r - l + 1];
+        return merge(st[k][l], st[k][r - (1 << k) + 1]);
+    }
+};
+```
+
+#### Sqrt Decomposition
+
+Use for simple range queries with point updates when segment tree is overkill.
+
+```cpp
+struct SqrtDecomp {
+    int n, B;
+    vector<long long> a, block;
+    SqrtDecomp(const vector<int>& v = {}) { if (!v.empty()) build(v); }
+    void build(const vector<int>& v) {
+        n = v.size();
+        B = sqrt(n) + 1;
+        a.assign(v.begin(), v.end());
+        block.assign(B, 0);
+        for (int i = 0; i < n; i++) block[i / B] += a[i];
+    }
+    void update(int idx, long long val) {
+        block[idx / B] += val - a[idx];
+        a[idx] = val;
+    }
+    long long query(int l, int r) {
+        long long ans = 0;
+        while (l <= r && l % B != 0) ans += a[l++];
+        while (l + B - 1 <= r) {
+            ans += block[l / B];
+            l += B;
+        }
+        while (l <= r) ans += a[l++];
+        return ans;
+    }
+};
+```
+
+### Moderate Level: Trees and Disjoint Set Union
+
+#### Disjoint Set Union
+
+Use for dynamic connectivity under only edge additions, Kruskal MST, and grouping. Amortized complexity: almost `O(1)`.
+
+```cpp
+struct DSU {
+    vector<int> parent, sz;
+    DSU(int n = 0) { init(n); }
+    void init(int n) {
+        parent.resize(n);
+        sz.assign(n, 1);
+        iota(parent.begin(), parent.end(), 0);
+    }
+    int find(int x) {
+        if (parent[x] == x) return x;
+        return parent[x] = find(parent[x]);
+    }
+    bool unite(int a, int b) {
+        a = find(a), b = find(b);
+        if (a == b) return false;
+        if (sz[a] < sz[b]) swap(a, b);
+        parent[b] = a;
+        sz[a] += sz[b];
+        return true;
+    }
+};
+```
+
+#### Tree DFS, Subtree Size, Depth, Parent
+
+```cpp
+void dfsTree(int u, int p, const vector<vector<int>>& g,
+             vector<int>& parent, vector<int>& depth, vector<int>& sub) {
+    parent[u] = p;
+    sub[u] = 1;
+    for (int v : g[u]) {
+        if (v == p) continue;
+        depth[v] = depth[u] + 1;
+        dfsTree(v, u, g, parent, depth, sub);
+        sub[u] += sub[v];
+    }
+}
+```
+
+#### Tree Diameter
+
+```cpp
+pair<int, int> farthest(int src, const vector<vector<int>>& g) {
+    vector<int> dist(g.size(), -1);
+    queue<int> q;
+    q.push(src);
+    dist[src] = 0;
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int v : g[u]) if (dist[v] == -1) {
+            dist[v] = dist[u] + 1;
+            q.push(v);
+        }
+    }
+    int best = src;
+    for (int i = 0; i < (int)g.size(); i++) {
+        if (dist[i] > dist[best]) best = i;
+    }
+    return {best, dist[best]};
+}
+
+int treeDiameter(const vector<vector<int>>& g) {
+    auto [a, _] = farthest(0, g);
+    auto [b, d] = farthest(a, g);
+    return d;
+}
+```
+
+#### Binary Lifting LCA
+
+Build `O(n log n)`, query `O(log n)`.
+
+```cpp
+struct LCA {
+    int n, LOG;
+    vector<int> depth;
+    vector<vector<int>> up;
+    vector<vector<int>> g;
+
+    LCA(const vector<vector<int>>& graph, int root = 0) : g(graph) {
+        n = g.size();
+        LOG = 1;
+        while ((1 << LOG) <= n) LOG++;
+        depth.assign(n, 0);
+        up.assign(LOG, vector<int>(n, root));
+        dfs(root, root);
+    }
+
+    void dfs(int u, int p) {
+        up[0][u] = p;
+        for (int k = 1; k < LOG; k++) up[k][u] = up[k - 1][up[k - 1][u]];
+        for (int v : g[u]) if (v != p) {
+            depth[v] = depth[u] + 1;
+            dfs(v, u);
+        }
+    }
+
+    int lift(int u, int d) {
+        for (int k = 0; k < LOG; k++) if (d & (1 << k)) u = up[k][u];
+        return u;
+    }
+
+    int query(int a, int b) {
+        if (depth[a] < depth[b]) swap(a, b);
+        a = lift(a, depth[a] - depth[b]);
+        if (a == b) return a;
+        for (int k = LOG - 1; k >= 0; k--) {
+            if (up[k][a] != up[k][b]) {
+                a = up[k][a];
+                b = up[k][b];
+            }
+        }
+        return up[0][a];
+    }
+};
+```
+
+#### Euler Tour for Subtree Queries
+
+Flatten a rooted tree so each subtree becomes a contiguous range.
+
+```cpp
+void eulerDfs(int u, int p, const vector<vector<int>>& g,
+              vector<int>& tin, vector<int>& tout, vector<int>& order, int& timer) {
+    tin[u] = timer++;
+    order.push_back(u);
+    for (int v : g[u]) if (v != p) eulerDfs(v, u, g, tin, tout, order, timer);
+    tout[u] = timer - 1;
+}
+```
+
+#### Trie
+
+Use for prefix queries, dictionary matching, and bitwise tries.
+
+```cpp
+struct Trie {
+    struct Node {
+        int nxt[26];
+        int pass = 0, end = 0;
+        Node() { fill(nxt, nxt + 26, -1); }
+    };
+    vector<Node> tr{Node()};
+
+    void insert(const string& s) {
+        int u = 0;
+        tr[u].pass++;
+        for (char ch : s) {
+            int c = ch - 'a';
+            if (tr[u].nxt[c] == -1) {
+                tr[u].nxt[c] = tr.size();
+                tr.push_back(Node());
+            }
+            u = tr[u].nxt[c];
+            tr[u].pass++;
+        }
+        tr[u].end++;
+    }
+
+    bool search(const string& s) {
+        int u = 0;
+        for (char ch : s) {
+            int c = ch - 'a';
+            if (tr[u].nxt[c] == -1) return false;
+            u = tr[u].nxt[c];
+        }
+        return tr[u].end > 0;
+    }
+};
+```
+
+#### Heavy-Light Decomposition
+
+Use for path queries/updates on trees. Pair with a segment tree over `pos[u]`.
+
+```cpp
+struct HLD {
+    int n, cur = 0;
+    vector<vector<int>> g;
+    vector<int> parent, depth, heavy, head, pos, sz;
+
+    HLD(const vector<vector<int>>& graph, int root = 0) : g(graph) {
+        n = g.size();
+        parent.assign(n, -1);
+        depth.assign(n, 0);
+        heavy.assign(n, -1);
+        head.assign(n, 0);
+        pos.assign(n, 0);
+        sz.assign(n, 0);
+        dfs(root);
+        decompose(root, root);
+    }
+
+    int dfs(int u) {
+        sz[u] = 1;
+        int best = 0;
+        for (int v : g[u]) if (v != parent[u]) {
+            parent[v] = u;
+            depth[v] = depth[u] + 1;
+            int child = dfs(v);
+            sz[u] += child;
+            if (child > best) best = child, heavy[u] = v;
+        }
+        return sz[u];
+    }
+
+    void decompose(int u, int h) {
+        head[u] = h;
+        pos[u] = cur++;
+        if (heavy[u] != -1) decompose(heavy[u], h);
+        for (int v : g[u]) {
+            if (v != parent[u] && v != heavy[u]) decompose(v, v);
+        }
+    }
+
+    template <class F>
+    void pathQuery(int a, int b, F useRange) {
+        while (head[a] != head[b]) {
+            if (depth[head[a]] < depth[head[b]]) swap(a, b);
+            useRange(pos[head[a]], pos[a]);
+            a = parent[head[a]];
+        }
+        if (depth[a] > depth[b]) swap(a, b);
+        useRange(pos[a], pos[b]);
+    }
+};
+```
+
+#### Centroid Decomposition Skeleton
+
+Use for distance queries on trees where each update/query should touch `O(log n)` centroids.
+
+```cpp
+struct CentroidDecomposition {
+    int n;
+    vector<vector<int>> g;
+    vector<int> sub, parent;
+    vector<bool> dead;
+
+    CentroidDecomposition(vector<vector<int>> graph) : g(move(graph)) {
+        n = g.size();
+        sub.assign(n, 0);
+        parent.assign(n, -1);
+        dead.assign(n, false);
+        build(0, -1);
+    }
+
+    int dfsSize(int u, int p) {
+        sub[u] = 1;
+        for (int v : g[u]) if (v != p && !dead[v]) sub[u] += dfsSize(v, u);
+        return sub[u];
+    }
+
+    int dfsCentroid(int u, int p, int total) {
+        for (int v : g[u]) {
+            if (v != p && !dead[v] && sub[v] > total / 2) return dfsCentroid(v, u, total);
+        }
+        return u;
+    }
+
+    void build(int entry, int p) {
+        int total = dfsSize(entry, -1);
+        int c = dfsCentroid(entry, -1, total);
+        parent[c] = p;
+        dead[c] = true;
+        for (int v : g[c]) if (!dead[v]) build(v, c);
+    }
+};
+```
+
+### Moderate to Advanced Level: Graph Algorithms
+
+#### BFS
+
+Use for shortest paths in unweighted graphs.
+
+```cpp
+vector<int> bfs(int src, const vector<vector<int>>& g) {
+    vector<int> dist(g.size(), -1);
+    queue<int> q;
+    dist[src] = 0;
+    q.push(src);
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        for (int v : g[u]) if (dist[v] == -1) {
+            dist[v] = dist[u] + 1;
+            q.push(v);
+        }
+    }
+    return dist;
+}
+```
+
+#### DFS Connected Components
+
+```cpp
+void dfsComponent(int u, const vector<vector<int>>& g, vector<int>& comp, int id) {
+    comp[u] = id;
+    for (int v : g[u]) if (comp[v] == -1) dfsComponent(v, g, comp, id);
+}
+
+vector<int> components(const vector<vector<int>>& g) {
+    int n = g.size(), id = 0;
+    vector<int> comp(n, -1);
+    for (int i = 0; i < n; i++) if (comp[i] == -1) dfsComponent(i, g, comp, id++);
+    return comp;
+}
+```
+
+#### Topological Sort
+
+Use only on DAGs. If output size is less than `n`, there is a directed cycle.
+
+```cpp
+vector<int> topoSort(const vector<vector<int>>& g) {
+    int n = g.size();
+    vector<int> indeg(n), order;
+    for (int u = 0; u < n; u++) for (int v : g[u]) indeg[v]++;
+    queue<int> q;
+    for (int i = 0; i < n; i++) if (indeg[i] == 0) q.push(i);
+    while (!q.empty()) {
+        int u = q.front(); q.pop();
+        order.push_back(u);
+        for (int v : g[u]) if (--indeg[v] == 0) q.push(v);
+    }
+    return order;
+}
+```
+
+#### Dijkstra
+
+Use with nonnegative edge weights only. Complexity: `O((n + m) log n)`.
+
+```cpp
+vector<long long> dijkstra(int src, const vector<vector<pair<int, int>>>& g) {
+    int n = g.size();
+    vector<long long> dist(n, LINF);
+    priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> pq;
+    dist[src] = 0;
+    pq.push({0, src});
+    while (!pq.empty()) {
+        auto [d, u] = pq.top(); pq.pop();
+        if (d != dist[u]) continue;
+        for (auto [v, w] : g[u]) {
+            if (dist[v] > d + w) {
+                dist[v] = d + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;
+}
+```
+
+#### 0-1 BFS
+
+Use when edge weights are only `0` or `1`.
+
+```cpp
+vector<int> zeroOneBfs(int src, const vector<vector<pair<int, int>>>& g) {
+    int n = g.size();
+    vector<int> dist(n, INF);
+    deque<int> dq;
+    dist[src] = 0;
+    dq.push_front(src);
+    while (!dq.empty()) {
+        int u = dq.front(); dq.pop_front();
+        for (auto [v, w] : g[u]) {
+            if (dist[v] > dist[u] + w) {
+                dist[v] = dist[u] + w;
+                if (w == 0) dq.push_front(v);
+                else dq.push_back(v);
+            }
+        }
+    }
+    return dist;
+}
+```
+
+#### Bellman-Ford
+
+Use for negative weights and negative-cycle detection. Complexity: `O(nm)`.
+
+```cpp
+struct EdgeBF {
+    int u, v;
+    long long w;
+};
+
+bool bellmanFord(int n, int src, const vector<EdgeBF>& edges, vector<long long>& dist) {
+    dist.assign(n, LINF);
+    dist[src] = 0;
+    for (int i = 0; i < n - 1; i++) {
+        bool changed = false;
+        for (auto e : edges) {
+            if (dist[e.u] < LINF && dist[e.v] > dist[e.u] + e.w) {
+                dist[e.v] = dist[e.u] + e.w;
+                changed = true;
+            }
+        }
+        if (!changed) break;
+    }
+    for (auto e : edges) {
+        if (dist[e.u] < LINF && dist[e.v] > dist[e.u] + e.w) return false;
+    }
+    return true;
+}
+```
+
+#### Floyd-Warshall
+
+Use for all-pairs shortest path when `n` is small.
+
+```cpp
+void floydWarshall(vector<vector<long long>>& d) {
+    int n = d.size();
+    for (int k = 0; k < n; k++) {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (d[i][k] < LINF && d[k][j] < LINF) {
+                    d[i][j] = min(d[i][j], d[i][k] + d[k][j]);
+                }
+            }
+        }
+    }
+}
+```
+
+#### Kruskal MST
+
+```cpp
+struct EdgeMST {
+    int u, v;
+    long long w;
+    bool operator<(const EdgeMST& other) const { return w < other.w; }
+};
+
+long long kruskal(int n, vector<EdgeMST> edges) {
+    sort(edges.begin(), edges.end());
+    DSU dsu(n);
+    long long cost = 0;
+    for (auto e : edges) {
+        if (dsu.unite(e.u, e.v)) cost += e.w;
+    }
+    return cost;
+}
+```
+
+#### Prim MST
+
+```cpp
+long long prim(const vector<vector<pair<int, int>>>& g) {
+    int n = g.size();
+    vector<int> used(n, 0);
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+    pq.push({0, 0});
+    long long cost = 0;
+    while (!pq.empty()) {
+        auto [w, u] = pq.top(); pq.pop();
+        if (used[u]) continue;
+        used[u] = 1;
+        cost += w;
+        for (auto [v, nw] : g[u]) if (!used[v]) pq.push({nw, v});
+    }
+    return cost;
+}
+```
+
+#### Tarjan SCC
+
+```cpp
+struct TarjanSCC {
+    int n, timer = 0, compCnt = 0;
+    vector<vector<int>> g;
+    vector<int> disc, low, comp, st;
+    vector<bool> inStack;
+
+    TarjanSCC(const vector<vector<int>>& graph) : g(graph) {
+        n = g.size();
+        disc.assign(n, -1);
+        low.assign(n, 0);
+        comp.assign(n, -1);
+        inStack.assign(n, false);
+        for (int i = 0; i < n; i++) if (disc[i] == -1) dfs(i);
+    }
+
+    void dfs(int u) {
+        disc[u] = low[u] = timer++;
+        st.push_back(u);
+        inStack[u] = true;
+        for (int v : g[u]) {
+            if (disc[v] == -1) {
+                dfs(v);
+                low[u] = min(low[u], low[v]);
+            } else if (inStack[v]) {
+                low[u] = min(low[u], disc[v]);
+            }
+        }
+        if (low[u] == disc[u]) {
+            while (true) {
+                int v = st.back();
+                st.pop_back();
+                inStack[v] = false;
+                comp[v] = compCnt;
+                if (v == u) break;
+            }
+            compCnt++;
+        }
+    }
+};
+```
+
+#### Bridges and Articulation Points
+
+```cpp
+struct BridgesArticulation {
+    int n, timer = 0;
+    vector<vector<int>> g;
+    vector<int> tin, low, isArt;
+    vector<pair<int, int>> bridges;
+
+    BridgesArticulation(const vector<vector<int>>& graph) : g(graph) {
+        n = g.size();
+        tin.assign(n, -1);
+        low.assign(n, 0);
+        isArt.assign(n, 0);
+        for (int i = 0; i < n; i++) if (tin[i] == -1) dfs(i, -1);
+    }
+
+    void dfs(int u, int p) {
+        tin[u] = low[u] = timer++;
+        int children = 0;
+        for (int v : g[u]) {
+            if (v == p) continue;
+            if (tin[v] != -1) {
+                low[u] = min(low[u], tin[v]);
+            } else {
+                dfs(v, u);
+                low[u] = min(low[u], low[v]);
+                if (low[v] > tin[u]) bridges.push_back({u, v});
+                if (p != -1 && low[v] >= tin[u]) isArt[u] = 1;
+                children++;
+            }
+        }
+        if (p == -1 && children > 1) isArt[u] = 1;
+    }
+};
+```
+
+#### Euler Path in Directed Graph
+
+```cpp
+vector<int> eulerDirected(int n, vector<vector<int>> g, int start) {
+    vector<int> it(n), path, st{start};
+    while (!st.empty()) {
+        int u = st.back();
+        if (it[u] < (int)g[u].size()) {
+            st.push_back(g[u][it[u]++]);
+        } else {
+            path.push_back(u);
+            st.pop_back();
+        }
+    }
+    reverse(path.begin(), path.end());
+    return path;
+}
+```
+
+#### 2-SAT
+
+Use implication graph + SCC. Variable `x` has nodes `2*x` false and `2*x+1` true.
+
+```cpp
+struct TwoSAT {
+    int n;
+    vector<vector<int>> g;
+    TwoSAT(int n) : n(n), g(2 * n) {}
+
+    int id(int x, bool val) { return 2 * x + val; }
+    void imply(int a, int b) { g[a].push_back(b); }
+    void addOr(int x, bool xv, int y, bool yv) {
+        imply(id(x, !xv), id(y, yv));
+        imply(id(y, !yv), id(x, xv));
+    }
+
+    vector<int> solve() {
+        TarjanSCC scc(g);
+        vector<int> ans(n);
+        for (int i = 0; i < n; i++) {
+            if (scc.comp[id(i, false)] == scc.comp[id(i, true)]) return {};
+            ans[i] = scc.comp[id(i, false)] > scc.comp[id(i, true)];
+        }
+        return ans;
+    }
+};
+```
+
+#### Functional Graph Binary Lifting
+
+Use when every node has exactly one outgoing edge.
+
+```cpp
+struct FunctionalLift {
+    int n, LOG;
+    vector<vector<int>> up;
+    FunctionalLift(const vector<int>& nxt) {
+        n = nxt.size();
+        LOG = 60;
+        up.assign(LOG, vector<int>(n));
+        up[0] = nxt;
+        for (int k = 1; k < LOG; k++) {
+            for (int i = 0; i < n; i++) up[k][i] = up[k - 1][up[k - 1][i]];
+        }
+    }
+    int jump(int u, long long steps) {
+        for (int k = 0; k < LOG; k++) if (steps & (1LL << k)) u = up[k][u];
+        return u;
+    }
+};
+```
+
+### Advanced Level: Flow and Matching
+
+#### Dinic Max Flow
+
+Use for max flow, min cut, bipartite matching reductions, and edge-disjoint paths.
+
+```cpp
+struct Dinic {
+    struct Edge {
+        int to, rev;
+        long long cap;
+    };
+    int n;
+    vector<vector<Edge>> g;
+    vector<int> level, it;
+
+    Dinic(int n) : n(n), g(n), level(n), it(n) {}
+
+    void addEdge(int u, int v, long long c) {
+        Edge a{v, (int)g[v].size(), c};
+        Edge b{u, (int)g[u].size(), 0};
+        g[u].push_back(a);
+        g[v].push_back(b);
+    }
+
+    bool bfs(int s, int t) {
+        fill(level.begin(), level.end(), -1);
+        queue<int> q;
+        level[s] = 0;
+        q.push(s);
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            for (auto& e : g[u]) if (e.cap > 0 && level[e.to] == -1) {
+                level[e.to] = level[u] + 1;
+                q.push(e.to);
+            }
+        }
+        return level[t] != -1;
+    }
+
+    long long dfs(int u, int t, long long f) {
+        if (u == t) return f;
+        for (int& i = it[u]; i < (int)g[u].size(); i++) {
+            Edge& e = g[u][i];
+            if (e.cap > 0 && level[e.to] == level[u] + 1) {
+                long long ret = dfs(e.to, t, min(f, e.cap));
+                if (ret) {
+                    e.cap -= ret;
+                    g[e.to][e.rev].cap += ret;
+                    return ret;
+                }
+            }
+        }
+        return 0;
+    }
+
+    long long maxFlow(int s, int t) {
+        long long flow = 0;
+        while (bfs(s, t)) {
+            fill(it.begin(), it.end(), 0);
+            while (long long f = dfs(s, t, LINF)) flow += f;
+        }
+        return flow;
+    }
+};
+```
+
+#### Kuhn Bipartite Matching
+
+Simple and easy. Complexity: `O(VE)`.
+
+```cpp
+struct Kuhn {
+    int n, m;
+    vector<vector<int>> g;
+    vector<int> matchR, seen;
+    Kuhn(int n, int m) : n(n), m(m), g(n), matchR(m, -1), seen(n) {}
+    void addEdge(int l, int r) { g[l].push_back(r); }
+    bool dfs(int u, int tag) {
+        if (seen[u] == tag) return false;
+        seen[u] = tag;
+        for (int v : g[u]) {
+            if (matchR[v] == -1 || dfs(matchR[v], tag)) {
+                matchR[v] = u;
+                return true;
+            }
+        }
+        return false;
+    }
+    int maxMatching() {
+        int ans = 0;
+        for (int u = 0; u < n; u++) ans += dfs(u, u + 1);
+        return ans;
+    }
+};
+```
+
+#### Hopcroft-Karp
+
+Faster bipartite matching. Complexity: `O(E sqrt(V))`.
+
+```cpp
+struct HopcroftKarp {
+    int n, m;
+    vector<vector<int>> g;
+    vector<int> dist, pairU, pairV;
+    HopcroftKarp(int n, int m) : n(n), m(m), g(n), dist(n), pairU(n, -1), pairV(m, -1) {}
+    void addEdge(int u, int v) { g[u].push_back(v); }
+
+    bool bfs() {
+        queue<int> q;
+        for (int u = 0; u < n; u++) {
+            if (pairU[u] == -1) dist[u] = 0, q.push(u);
+            else dist[u] = -1;
+        }
+        bool found = false;
+        while (!q.empty()) {
+            int u = q.front(); q.pop();
+            for (int v : g[u]) {
+                int nxt = pairV[v];
+                if (nxt == -1) found = true;
+                else if (dist[nxt] == -1) {
+                    dist[nxt] = dist[u] + 1;
+                    q.push(nxt);
+                }
+            }
+        }
+        return found;
+    }
+
+    bool dfs(int u) {
+        for (int v : g[u]) {
+            int nxt = pairV[v];
+            if (nxt == -1 || (dist[nxt] == dist[u] + 1 && dfs(nxt))) {
+                pairU[u] = v;
+                pairV[v] = u;
+                return true;
+            }
+        }
+        dist[u] = -1;
+        return false;
+    }
+
+    int maxMatching() {
+        int matching = 0;
+        while (bfs()) {
+            for (int u = 0; u < n; u++) {
+                if (pairU[u] == -1 && dfs(u)) matching++;
+            }
+        }
+        return matching;
+    }
+};
+```
+
+#### Min-Cost Max-Flow
+
+Use for assignment-like problems, min-cost circulation variants, and flow with costs.
+
+```cpp
+struct MinCostFlow {
+    struct Edge {
+        int to, rev, cap;
+        long long cost;
+    };
+    int n;
+    vector<vector<Edge>> g;
+    MinCostFlow(int n) : n(n), g(n) {}
+
+    void addEdge(int u, int v, int cap, long long cost) {
+        Edge a{v, (int)g[v].size(), cap, cost};
+        Edge b{u, (int)g[u].size(), 0, -cost};
+        g[u].push_back(a);
+        g[v].push_back(b);
+    }
+
+    pair<int, long long> minCostMaxFlow(int s, int t) {
+        int flow = 0;
+        long long cost = 0;
+        vector<long long> dist(n), pot(n);
+        vector<int> pv(n), pe(n);
+        while (true) {
+            fill(dist.begin(), dist.end(), LINF);
+            priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> pq;
+            dist[s] = 0;
+            pq.push({0, s});
+            while (!pq.empty()) {
+                auto [d, u] = pq.top(); pq.pop();
+                if (d != dist[u]) continue;
+                for (int i = 0; i < (int)g[u].size(); i++) {
+                    Edge& e = g[u][i];
+                    if (e.cap <= 0) continue;
+                    long long nd = d + e.cost + pot[u] - pot[e.to];
+                    if (nd < dist[e.to]) {
+                        dist[e.to] = nd;
+                        pv[e.to] = u;
+                        pe[e.to] = i;
+                        pq.push({nd, e.to});
+                    }
+                }
+            }
+            if (dist[t] == LINF) break;
+            for (int i = 0; i < n; i++) if (dist[i] < LINF) pot[i] += dist[i];
+            int add = INF;
+            for (int v = t; v != s; v = pv[v]) add = min(add, g[pv[v]][pe[v]].cap);
+            for (int v = t; v != s; v = pv[v]) {
+                Edge& e = g[pv[v]][pe[v]];
+                e.cap -= add;
+                g[v][e.rev].cap += add;
+                cost += 1LL * add * e.cost;
+            }
+            flow += add;
+        }
+        return {flow, cost};
+    }
+};
+```
+
+### Moderate to Advanced Level: String Algorithms
+
+#### Prefix Function and KMP
+
+Use for exact pattern matching. Complexity: `O(n + m)`.
+
+```cpp
+vector<int> prefixFunction(const string& s) {
+    int n = s.size();
+    vector<int> pi(n);
+    for (int i = 1; i < n; i++) {
+        int j = pi[i - 1];
+        while (j > 0 && s[i] != s[j]) j = pi[j - 1];
+        if (s[i] == s[j]) j++;
+        pi[i] = j;
+    }
+    return pi;
+}
+
+vector<int> kmpSearch(const string& text, const string& pat) {
+    string s = pat + '#' + text;
+    vector<int> pi = prefixFunction(s), ans;
+    int m = pat.size();
+    for (int i = m + 1; i < (int)s.size(); i++) {
+        if (pi[i] == m) ans.push_back(i - 2 * m);
+    }
+    return ans;
+}
+```
+
+#### Z Algorithm
+
+Use for pattern matching, border analysis, and string periodicity.
+
+```cpp
+vector<int> zFunction(const string& s) {
+    int n = s.size();
+    vector<int> z(n);
+    for (int i = 1, l = 0, r = 0; i < n; i++) {
+        if (i <= r) z[i] = min(r - i + 1, z[i - l]);
+        while (i + z[i] < n && s[z[i]] == s[i + z[i]]) z[i]++;
+        if (i + z[i] - 1 > r) l = i, r = i + z[i] - 1;
+    }
+    return z;
+}
+```
+
+#### Rolling Hash
+
+Use for substring equality. Use double hash when collision risk matters.
+
+```cpp
+struct RollingHash {
+    static const long long MOD = 1000000007;
+    static const long long BASE = 911382323;
+    vector<long long> h, p;
+    RollingHash(const string& s) {
+        int n = s.size();
+        h.assign(n + 1, 0);
+        p.assign(n + 1, 1);
+        for (int i = 0; i < n; i++) {
+            h[i + 1] = (h[i] * BASE + s[i]) % MOD;
+            p[i + 1] = p[i] * BASE % MOD;
+        }
+    }
+    long long get(int l, int r) {
+        // inclusive l, inclusive r
+        long long res = (h[r + 1] - h[l] * p[r - l + 1]) % MOD;
+        if (res < 0) res += MOD;
+        return res;
+    }
+};
+```
+
+#### Aho-Corasick
+
+Use for matching many patterns in one text.
+
+```cpp
+struct AhoCorasick {
+    struct Node {
+        int next[26];
+        int link = 0;
+        vector<int> out;
+        Node() { fill(next, next + 26, -1); }
+    };
+    vector<Node> t{Node()};
+
+    void addString(const string& s, int id) {
+        int v = 0;
+        for (char ch : s) {
+            int c = ch - 'a';
+            if (t[v].next[c] == -1) {
+                t[v].next[c] = t.size();
+                t.push_back(Node());
+            }
+            v = t[v].next[c];
+        }
+        t[v].out.push_back(id);
+    }
+
+    void build() {
+        queue<int> q;
+        for (int c = 0; c < 26; c++) {
+            int u = t[0].next[c];
+            if (u == -1) t[0].next[c] = 0;
+            else q.push(u);
+        }
+        while (!q.empty()) {
+            int v = q.front(); q.pop();
+            for (int c = 0; c < 26; c++) {
+                int u = t[v].next[c];
+                if (u == -1) t[v].next[c] = t[t[v].link].next[c];
+                else {
+                    t[u].link = t[t[v].link].next[c];
+                    for (int id : t[t[u].link].out) t[u].out.push_back(id);
+                    q.push(u);
+                }
+            }
+        }
+    }
+
+    vector<pair<int, int>> search(const string& s) {
+        vector<pair<int, int>> hits; // {ending position, pattern id}
+        int v = 0;
+        for (int i = 0; i < (int)s.size(); i++) {
+            v = t[v].next[s[i] - 'a'];
+            for (int id : t[v].out) hits.push_back({i, id});
+        }
+        return hits;
+    }
+};
+```
+
+#### Manacher
+
+Use for all palindrome radii in `O(n)`.
+
+```cpp
+pair<vector<int>, vector<int>> manacher(const string& s) {
+    int n = s.size();
+    vector<int> odd(n), even(n);
+    for (int i = 0, l = 0, r = -1; i < n; i++) {
+        int k = (i > r) ? 1 : min(odd[l + r - i], r - i + 1);
+        while (0 <= i - k && i + k < n && s[i - k] == s[i + k]) k++;
+        odd[i] = k--;
+        if (i + k > r) l = i - k, r = i + k;
+    }
+    for (int i = 0, l = 0, r = -1; i < n; i++) {
+        int k = (i > r) ? 0 : min(even[l + r - i + 1], r - i + 1);
+        while (0 <= i - k - 1 && i + k < n && s[i - k - 1] == s[i + k]) k++;
+        even[i] = k--;
+        if (i + k > r) l = i - k - 1, r = i + k;
+    }
+    return {odd, even};
+}
+```
+
+#### Suffix Array and LCP
+
+Use for lexicographic suffix order, substring queries, and repeated substring problems.
+
+```cpp
+vector<int> suffixArray(string s) {
+    s.push_back('$');
+    int n = s.size();
+    vector<int> p(n), c(n);
+    vector<pair<char, int>> a(n);
+    for (int i = 0; i < n; i++) a[i] = {s[i], i};
+    sort(a.begin(), a.end());
+    for (int i = 0; i < n; i++) p[i] = a[i].second;
+    for (int i = 1; i < n; i++) c[p[i]] = c[p[i - 1]] + (a[i].first != a[i - 1].first);
+
+    for (int k = 0; (1 << k) < n; k++) {
+        for (int i = 0; i < n; i++) p[i] = (p[i] - (1 << k) + n) % n;
+        vector<int> cnt(n), pn(n), cn(n);
+        for (int x : c) cnt[x]++;
+        for (int i = 1; i < n; i++) cnt[i] += cnt[i - 1];
+        for (int i = n - 1; i >= 0; i--) pn[--cnt[c[p[i]]]] = p[i];
+        p.swap(pn);
+        cn[p[0]] = 0;
+        for (int i = 1; i < n; i++) {
+            pair<int, int> cur = {c[p[i]], c[(p[i] + (1 << k)) % n]};
+            pair<int, int> prev = {c[p[i - 1]], c[(p[i - 1] + (1 << k)) % n]};
+            cn[p[i]] = cn[p[i - 1]] + (cur != prev);
+        }
+        c.swap(cn);
+    }
+    p.erase(p.begin());
+    return p;
+}
+
+vector<int> lcpArray(const string& s, const vector<int>& sa) {
+    int n = s.size();
+    vector<int> rank(n), lcp(n - 1);
+    for (int i = 0; i < n; i++) rank[sa[i]] = i;
+    int k = 0;
+    for (int i = 0; i < n; i++) {
+        if (rank[i] == n - 1) {
+            k = 0;
+            continue;
+        }
+        int j = sa[rank[i] + 1];
+        while (i + k < n && j + k < n && s[i + k] == s[j + k]) k++;
+        lcp[rank[i]] = k;
+        if (k) k--;
+    }
+    return lcp;
+}
+```
+
+#### Suffix Automaton
+
+Use for distinct substrings, substring existence, and many advanced string DP tasks.
+
+```cpp
+struct SuffixAutomaton {
+    struct State {
+        int link = -1, len = 0;
+        map<char, int> next;
+    };
+    vector<State> st;
+    int last;
+
+    SuffixAutomaton() {
+        st.reserve(200000);
+        st.push_back(State());
+        last = 0;
+    }
+
+    void extend(char c) {
+        int cur = st.size();
+        st.push_back(State());
+        st[cur].len = st[last].len + 1;
+        int p = last;
+        while (p != -1 && !st[p].next.count(c)) {
+            st[p].next[c] = cur;
+            p = st[p].link;
+        }
+        if (p == -1) st[cur].link = 0;
+        else {
+            int q = st[p].next[c];
+            if (st[p].len + 1 == st[q].len) st[cur].link = q;
+            else {
+                int clone = st.size();
+                st.push_back(st[q]);
+                st[clone].len = st[p].len + 1;
+                while (p != -1 && st[p].next[c] == q) {
+                    st[p].next[c] = clone;
+                    p = st[p].link;
+                }
+                st[q].link = st[cur].link = clone;
+            }
+        }
+        last = cur;
+    }
+};
+```
+
+#### Booth's Algorithm for Minimal Rotation
+
+```cpp
+int minRotationIndex(const string& s) {
+    string t = s + s;
+    int n = s.size(), i = 0, ans = 0;
+    while (i < n) {
+        ans = i;
+        int j = i + 1, k = i;
+        while (j < 2 * n && t[k] <= t[j]) {
+            if (t[k] < t[j]) k = i;
+            else k++;
+            j++;
+        }
+        while (i <= k) i += j - k;
+    }
+    return ans;
+}
+```
+
+### Early to Advanced Level: Bit Manipulation
+
+#### Common Bit Operations
+
+```cpp
+bool hasBit(long long x, int b) { return x & (1LL << b); }
+long long setBit(long long x, int b) { return x | (1LL << b); }
+long long clearBit(long long x, int b) { return x & ~(1LL << b); }
+long long toggleBit(long long x, int b) { return x ^ (1LL << b); }
+long long lowbit(long long x) { return x & -x; }
+bool isPowerOfTwo(long long x) { return x > 0 && (x & (x - 1)) == 0; }
+```
+
+#### Submask Enumeration
+
+```cpp
+for (int sub = mask; ; sub = (sub - 1) & mask) {
+    // use sub
+    if (sub == 0) break;
+}
+```
+
+#### XOR Linear Basis
+
+Use for maximum xor subset and linear independence over bits.
+
+```cpp
+struct XorBasis {
+    static const int LOG = 62;
+    long long basis[LOG]{};
+
+    void insert(long long x) {
+        for (int b = LOG - 1; b >= 0; b--) {
+            if (!(x & (1LL << b))) continue;
+            if (!basis[b]) {
+                basis[b] = x;
+                return;
+            }
+            x ^= basis[b];
+        }
+    }
+
+    long long maxXor() const {
+        long long ans = 0;
+        for (int b = LOG - 1; b >= 0; b--) ans = max(ans, ans ^ basis[b]);
+        return ans;
+    }
+};
+```
+
+### Moderate to ICPC Level: Number Theory and Combinatorics
+
+#### GCD, Extended GCD, Modular Power, Modular Inverse
+
+```cpp
+long long modPow(long long a, long long e, long long mod) {
+    long long r = 1 % mod;
+    while (e) {
+        if (e & 1) r = (__int128)r * a % mod;
+        a = (__int128)a * a % mod;
+        e >>= 1;
+    }
+    return r;
+}
+
+long long extGcd(long long a, long long b, long long& x, long long& y) {
+    if (b == 0) {
+        x = 1; y = 0;
+        return a;
+    }
+    long long x1, y1;
+    long long g = extGcd(b, a % b, x1, y1);
+    x = y1;
+    y = x1 - y1 * (a / b);
+    return g;
+}
+
+long long modInverse(long long a, long long mod) {
+    long long x, y;
+    long long g = extGcd(a, mod, x, y);
+    if (g != 1) return -1;
+    x %= mod;
+    if (x < 0) x += mod;
+    return x;
+}
+```
+
+#### Sieve and Linear Sieve
+
+```cpp
+vector<int> sieve(int n) {
+    vector<int> isPrime(n + 1, true), primes;
+    if (n >= 0) isPrime[0] = false;
+    if (n >= 1) isPrime[1] = false;
+    for (int i = 2; i <= n; i++) {
+        if (isPrime[i]) {
+            primes.push_back(i);
+            if (1LL * i * i <= n) {
+                for (long long j = 1LL * i * i; j <= n; j += i) isPrime[j] = false;
+            }
+        }
+    }
+    return primes;
+}
+
+vector<int> linearSieve(int n) {
+    vector<int> lp(n + 1), primes;
+    for (int i = 2; i <= n; i++) {
+        if (lp[i] == 0) lp[i] = i, primes.push_back(i);
+        for (int p : primes) {
+            if (p > lp[i] || 1LL * i * p > n) break;
+            lp[i * p] = p;
+        }
+    }
+    return primes;
+}
+```
+
+#### Factorials and nCr Mod Prime
+
+```cpp
+struct Comb {
+    long long mod;
+    vector<long long> fact, invFact;
+    Comb(int n, long long mod) : mod(mod), fact(n + 1), invFact(n + 1) {
+        fact[0] = 1;
+        for (int i = 1; i <= n; i++) fact[i] = fact[i - 1] * i % mod;
+        invFact[n] = modPow(fact[n], mod - 2, mod);
+        for (int i = n; i > 0; i--) invFact[i - 1] = invFact[i] * i % mod;
+    }
+    long long C(int n, int r) {
+        if (r < 0 || r > n) return 0;
+        return fact[n] * invFact[r] % mod * invFact[n - r] % mod;
+    }
+};
+```
+
+#### Chinese Remainder Theorem
+
+Works for non-coprime moduli too; returns `{answer, lcm}` or `{0, -1}` if impossible.
+
+```cpp
+pair<long long, long long> crt(long long a1, long long m1, long long a2, long long m2) {
+    long long x, y;
+    long long g = extGcd(m1, m2, x, y);
+    if ((a2 - a1) % g != 0) return {0, -1};
+    long long lcm = m1 / g * m2;
+    long long t = (__int128)(a2 - a1) / g * x % (m2 / g);
+    long long ans = (a1 + (__int128)m1 * t) % lcm;
+    if (ans < 0) ans += lcm;
+    return {ans, lcm};
+}
+```
+
+#### Baby-Step Giant-Step Discrete Log
+
+Solves `a^x = b (mod m)` when gcd assumptions are friendly. Complexity: `O(sqrt(m))`.
+
+```cpp
+long long discreteLog(long long a, long long b, long long m) {
+    a %= m; b %= m;
+    long long n = sqrt(m) + 1;
+    unordered_map<long long, long long, CustomHash> vals;
+    long long cur = b;
+    for (long long q = 0; q <= n; q++) {
+        vals[cur] = q;
+        cur = (__int128)cur * a % m;
+    }
+    long long an = 1;
+    for (int i = 0; i < n; i++) an = (__int128)an * a % m;
+    cur = 1;
+    for (long long p = 1; p <= n; p++) {
+        cur = (__int128)cur * an % m;
+        if (vals.count(cur)) {
+            long long ans = p * n - vals[cur];
+            if (ans >= 0) return ans;
+        }
+    }
+    return -1;
+}
+```
+
+#### Miller-Rabin and Pollard Rho
+
+Use for 64-bit primality and factorization.
+
+```cpp
+using u64 = uint64_t;
+using u128 = __uint128_t;
+
+u64 mulMod(u64 a, u64 b, u64 mod) {
+    return (u128)a * b % mod;
+}
+
+u64 powMod64(u64 a, u64 d, u64 mod) {
+    u64 r = 1;
+    while (d) {
+        if (d & 1) r = mulMod(r, a, mod);
+        a = mulMod(a, a, mod);
+        d >>= 1;
+    }
+    return r;
+}
+
+bool isPrime64(u64 n) {
+    if (n < 2) return false;
+    for (u64 p : {2ULL, 3ULL, 5ULL, 7ULL, 11ULL, 13ULL, 17ULL, 19ULL, 23ULL, 29ULL, 31ULL, 37ULL}) {
+        if (n % p == 0) return n == p;
+    }
+    u64 d = n - 1, s = 0;
+    while ((d & 1) == 0) d >>= 1, s++;
+    for (u64 a : {2ULL, 3ULL, 5ULL, 7ULL, 11ULL, 13ULL, 17ULL, 19ULL, 23ULL, 29ULL, 31ULL, 37ULL}) {
+        u64 x = powMod64(a, d, n);
+        if (x == 1 || x == n - 1) continue;
+        bool comp = true;
+        for (u64 r = 1; r < s; r++) {
+            x = mulMod(x, x, n);
+            if (x == n - 1) {
+                comp = false;
+                break;
+            }
+        }
+        if (comp) return false;
+    }
+    return true;
+}
+
+u64 pollard(u64 n) {
+    if (n % 2 == 0) return 2;
+    static mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+    while (true) {
+        u64 c = uniform_int_distribution<u64>(1, n - 1)(rng);
+        u64 x = uniform_int_distribution<u64>(0, n - 1)(rng);
+        u64 y = x, d = 1;
+        auto f = [&](u64 v) { return (mulMod(v, v, n) + c) % n; };
+        while (d == 1) {
+            x = f(x);
+            y = f(f(y));
+            d = gcd<u64>(x > y ? x - y : y - x, n);
+        }
+        if (d != n) return d;
+    }
+}
+
+void factor(u64 n, vector<u64>& res) {
+    if (n == 1) return;
+    if (isPrime64(n)) {
+        res.push_back(n);
+        return;
+    }
+    u64 d = pollard(n);
+    factor(d, res);
+    factor(n / d, res);
+}
+```
+
+#### NTT Polynomial Multiplication
+
+Use when modulus supports primitive roots, commonly `998244353`.
+
+```cpp
+const int MOD_NTT = 998244353;
+const int G_NTT = 3;
+
+int modPowInt(long long a, long long e) {
+    long long r = 1;
+    while (e) {
+        if (e & 1) r = r * a % MOD_NTT;
+        a = a * a % MOD_NTT;
+        e >>= 1;
+    }
+    return r;
+}
+
+void ntt(vector<int>& a, bool invert) {
+    int n = a.size();
+    for (int i = 1, j = 0; i < n; i++) {
+        int bit = n >> 1;
+        for (; j & bit; bit >>= 1) j ^= bit;
+        j ^= bit;
+        if (i < j) swap(a[i], a[j]);
+    }
+    for (int len = 2; len <= n; len <<= 1) {
+        int wlen = modPowInt(G_NTT, (MOD_NTT - 1) / len);
+        if (invert) wlen = modPowInt(wlen, MOD_NTT - 2);
+        for (int i = 0; i < n; i += len) {
+            long long w = 1;
+            for (int j = 0; j < len / 2; j++) {
+                int u = a[i + j];
+                int v = a[i + j + len / 2] * w % MOD_NTT;
+                a[i + j] = (u + v) % MOD_NTT;
+                a[i + j + len / 2] = (u - v + MOD_NTT) % MOD_NTT;
+                w = w * wlen % MOD_NTT;
+            }
+        }
+    }
+    if (invert) {
+        int invN = modPowInt(n, MOD_NTT - 2);
+        for (int& x : a) x = 1LL * x * invN % MOD_NTT;
+    }
+}
+
+vector<int> multiply(vector<int> a, vector<int> b) {
+    int n = 1;
+    while (n < (int)a.size() + (int)b.size() - 1) n <<= 1;
+    a.resize(n);
+    b.resize(n);
+    ntt(a, false);
+    ntt(b, false);
+    for (int i = 0; i < n; i++) a[i] = 1LL * a[i] * b[i] % MOD_NTT;
+    ntt(a, true);
+    return a;
+}
+```
+
+#### Fast Walsh-Hadamard Transform for XOR Convolution
+
+```cpp
+void fwht(vector<long long>& a, bool inverse) {
+    int n = a.size();
+    for (int len = 1; 2 * len <= n; len <<= 1) {
+        for (int i = 0; i < n; i += 2 * len) {
+            for (int j = 0; j < len; j++) {
+                long long u = a[i + j], v = a[i + j + len];
+                a[i + j] = u + v;
+                a[i + j + len] = u - v;
+            }
+        }
+    }
+    if (inverse) for (long long& x : a) x /= n;
+}
+```
+
+#### Berlekamp-Massey over Mod
+
+Use to find the shortest linear recurrence from initial terms.
+
+```cpp
+vector<long long> berlekampMassey(vector<long long> s, long long mod) {
+    vector<long long> C{1}, B{1};
+    long long b = 1;
+    int L = 0, m = 1;
+    for (int n = 0; n < (int)s.size(); n++) {
+        long long d = 0;
+        for (int i = 0; i <= L; i++) d = (d + C[i] * s[n - i]) % mod;
+        if (d == 0) {
+            m++;
+            continue;
+        }
+        vector<long long> T = C;
+        long long coef = d * modPow(b, mod - 2, mod) % mod;
+        if ((int)C.size() < (int)B.size() + m) C.resize(B.size() + m);
+        for (int i = 0; i < (int)B.size(); i++) {
+            C[i + m] = (C[i + m] - coef * B[i]) % mod;
+            if (C[i + m] < 0) C[i + m] += mod;
+        }
+        if (2 * L <= n) {
+            L = n + 1 - L;
+            B = T;
+            b = d;
+            m = 1;
+        } else {
+            m++;
+        }
+    }
+    C.erase(C.begin());
+    for (long long& x : C) x = (mod - x) % mod;
+    return C;
+}
+```
+
+### Moderate to Advanced Level: Computational Geometry
+
+#### Point, Dot, Cross, Orientation
+
+```cpp
+struct Point {
+    long long x, y;
+    bool operator<(const Point& other) const {
+        return x == other.x ? y < other.y : x < other.x;
+    }
+    bool operator==(const Point& other) const {
+        return x == other.x && y == other.y;
+    }
+};
+
+Point operator-(Point a, Point b) { return {a.x - b.x, a.y - b.y}; }
+long long dot(Point a, Point b) { return a.x * b.x + a.y * b.y; }
+long long cross(Point a, Point b) { return a.x * b.y - a.y * b.x; }
+long long orient(Point a, Point b, Point c) { return cross(b - a, c - a); }
+```
+
+#### Segment Intersection
+
+```cpp
+bool onSegment(Point a, Point b, Point p) {
+    return orient(a, b, p) == 0
+        && min(a.x, b.x) <= p.x && p.x <= max(a.x, b.x)
+        && min(a.y, b.y) <= p.y && p.y <= max(a.y, b.y);
+}
+
+bool segmentsIntersect(Point a, Point b, Point c, Point d) {
+    long long o1 = orient(a, b, c), o2 = orient(a, b, d);
+    long long o3 = orient(c, d, a), o4 = orient(c, d, b);
+    if ((o1 > 0) != (o2 > 0) && (o3 > 0) != (o4 > 0)) return true;
+    return onSegment(a, b, c) || onSegment(a, b, d)
+        || onSegment(c, d, a) || onSegment(c, d, b);
+}
+```
+
+#### Convex Hull, Monotonic Chain
+
+```cpp
+vector<Point> convexHull(vector<Point> p) {
+    sort(p.begin(), p.end());
+    p.erase(unique(p.begin(), p.end()), p.end());
+    if (p.size() <= 1) return p;
+    vector<Point> hull;
+    for (Point pt : p) {
+        while (hull.size() >= 2 &&
+               orient(hull[hull.size() - 2], hull.back(), pt) <= 0) hull.pop_back();
+        hull.push_back(pt);
+    }
+    int lowerSize = hull.size();
+    for (int i = (int)p.size() - 2; i >= 0; i--) {
+        Point pt = p[i];
+        while ((int)hull.size() > lowerSize &&
+               orient(hull[hull.size() - 2], hull.back(), pt) <= 0) hull.pop_back();
+        hull.push_back(pt);
+    }
+    hull.pop_back();
+    return hull;
+}
+```
+
+#### Polygon Area
+
+```cpp
+long long twicePolygonArea(const vector<Point>& p) {
+    long long area = 0;
+    int n = p.size();
+    for (int i = 0; i < n; i++) area += cross(p[i], p[(i + 1) % n]);
+    return llabs(area);
+}
+```
+
+#### Point in Polygon
+
+Returns `0` outside, `1` inside, `2` on boundary.
+
+```cpp
+int pointInPolygon(const vector<Point>& poly, Point q) {
+    bool inside = false;
+    int n = poly.size();
+    for (int i = 0, j = n - 1; i < n; j = i++) {
+        Point a = poly[i], b = poly[j];
+        if (onSegment(a, b, q)) return 2;
+        bool intersect = ((a.y > q.y) != (b.y > q.y)) &&
+            (q.x < (long double)(b.x - a.x) * (q.y - a.y) / (b.y - a.y) + a.x);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+```
+
+### Advanced Level: Offline, Persistent, and Hard Range Structures
+
+#### Merge Sort Tree
+
+Use for static queries like count numbers `<= x` in range. Build `O(n log n)`, query `O(log^2 n)`.
+
+```cpp
+struct MergeSortTree {
+    int n;
+    vector<vector<int>> tree;
+    MergeSortTree(const vector<int>& a = {}) { if (!a.empty()) build(a); }
+    void build(const vector<int>& a) {
+        n = a.size();
+        tree.assign(4 * n, {});
+        build(1, 0, n - 1, a);
+    }
+    void build(int node, int l, int r, const vector<int>& a) {
+        if (l == r) {
+            tree[node] = {a[l]};
+            return;
+        }
+        int mid = (l + r) / 2;
+        build(node * 2, l, mid, a);
+        build(node * 2 + 1, mid + 1, r, a);
+        merge(tree[node * 2].begin(), tree[node * 2].end(),
+              tree[node * 2 + 1].begin(), tree[node * 2 + 1].end(),
+              back_inserter(tree[node]));
+    }
+    int countLE(int node, int l, int r, int ql, int qr, int x) {
+        if (qr < l || r < ql) return 0;
+        if (ql <= l && r <= qr) {
+            return upper_bound(tree[node].begin(), tree[node].end(), x) - tree[node].begin();
+        }
+        int mid = (l + r) / 2;
+        return countLE(node * 2, l, mid, ql, qr, x)
+             + countLE(node * 2 + 1, mid + 1, r, ql, qr, x);
+    }
+};
+```
+
+#### Persistent Segment Tree for Kth Order Statistic
+
+Use for static range kth queries after coordinate compression.
+
+```cpp
+struct PersistentSeg {
+    struct Node {
+        int left = 0, right = 0, sum = 0;
+    };
+    vector<Node> st{{}};
+    vector<int> root{0};
+    int n;
+
+    PersistentSeg(int n = 0) : n(n) {}
+
+    int update(int prev, int l, int r, int pos) {
+        int cur = st.size();
+        st.push_back(st[prev]);
+        st[cur].sum++;
+        if (l != r) {
+            int mid = (l + r) / 2;
+            if (pos <= mid) st[cur].left = update(st[prev].left, l, mid, pos);
+            else st[cur].right = update(st[prev].right, mid + 1, r, pos);
+        }
+        return cur;
+    }
+
+    void addVersion(int compressedValue) {
+        root.push_back(update(root.back(), 0, n - 1, compressedValue));
+    }
+
+    int kth(int leftRoot, int rightRoot, int l, int r, int k) {
+        if (l == r) return l;
+        int mid = (l + r) / 2;
+        int cntLeft = st[st[rightRoot].left].sum - st[st[leftRoot].left].sum;
+        if (k <= cntLeft) return kth(st[leftRoot].left, st[rightRoot].left, l, mid, k);
+        return kth(st[leftRoot].right, st[rightRoot].right, mid + 1, r, k - cntLeft);
+    }
+};
+```
+
+#### Wavelet Tree
+
+Use for kth, count `<= x`, and frequency in static ranges.
+
+```cpp
+struct WaveletTree {
+    int lo, hi;
+    WaveletTree *l = nullptr, *r = nullptr;
+    vector<int> b;
+
+    WaveletTree(vector<int>::iterator from, vector<int>::iterator to, int x, int y) : lo(x), hi(y) {
+        if (from >= to || lo == hi) return;
+        int mid = lo + (hi - lo) / 2;
+        auto f = [mid](int v) { return v <= mid; };
+        b.reserve(to - from + 1);
+        b.push_back(0);
+        for (auto it = from; it != to; ++it) b.push_back(b.back() + f(*it));
+        auto pivot = stable_partition(from, to, f);
+        l = new WaveletTree(from, pivot, lo, mid);
+        r = new WaveletTree(pivot, to, mid + 1, hi);
+    }
+
+    int kth(int left, int right, int k) {
+        if (lo == hi) return lo;
+        int inLeft = b[right] - b[left - 1];
+        if (k <= inLeft) return l->kth(b[left - 1] + 1, b[right], k);
+        return r->kth(left - b[left - 1], right - b[right], k - inLeft);
+    }
+
+    int countLTE(int left, int right, int x) {
+        if (left > right || x < lo) return 0;
+        if (hi <= x) return right - left + 1;
+        return l->countLTE(b[left - 1] + 1, b[right], x)
+             + r->countLTE(left - b[left - 1], right - b[right], x);
+    }
+};
+```
+
+#### Mo's Algorithm
+
+Use for offline range queries when add/remove is cheap.
+
+```cpp
+struct Query {
+    int l, r, id;
+};
+
+vector<long long> mosAlgorithm(vector<int> a, vector<Query> queries) {
+    int n = a.size();
+    int B = max(1, (int)sqrt(n));
+    sort(queries.begin(), queries.end(), [&](const Query& x, const Query& y) {
+        int bx = x.l / B, by = y.l / B;
+        if (bx != by) return bx < by;
+        return (bx & 1) ? x.r > y.r : x.r < y.r;
+    });
+
+    vector<long long> ans(queries.size());
+    long long cur = 0;
+    auto add = [&](int idx) { cur += a[idx]; };
+    auto remove = [&](int idx) { cur -= a[idx]; };
+
+    int l = 0, r = -1;
+    for (auto q : queries) {
+        while (l > q.l) add(--l);
+        while (r < q.r) add(++r);
+        while (l < q.l) remove(l++);
+        while (r > q.r) remove(r--);
+        ans[q.id] = cur;
+    }
+    return ans;
+}
+```
+
+#### Rollback DSU
+
+Use for offline dynamic connectivity, divide-and-conquer over time, and backtracking connectivity.
+
+```cpp
+struct RollbackDSU {
+    vector<int> parent, sz;
+    vector<pair<int, int>> history;
+    int comps;
+
+    RollbackDSU(int n = 0) { init(n); }
+    void init(int n) {
+        parent.resize(n);
+        sz.assign(n, 1);
+        iota(parent.begin(), parent.end(), 0);
+        history.clear();
+        comps = n;
+    }
+    int find(int x) {
+        while (x != parent[x]) x = parent[x];
+        return x;
+    }
+    bool unite(int a, int b) {
+        a = find(a), b = find(b);
+        if (a == b) {
+            history.push_back({-1, -1});
+            return false;
+        }
+        if (sz[a] < sz[b]) swap(a, b);
+        history.push_back({b, sz[a]});
+        parent[b] = a;
+        sz[a] += sz[b];
+        comps--;
+        return true;
+    }
+    int snapshot() const { return history.size(); }
+    void rollback(int snap) {
+        while ((int)history.size() > snap) {
+            auto [b, oldSizeA] = history.back();
+            history.pop_back();
+            if (b == -1) continue;
+            int a = parent[b];
+            sz[a] = oldSizeA;
+            parent[b] = b;
+            comps++;
+        }
+    }
+};
+```
+
+#### Offline Dynamic Connectivity Skeleton
+
+Add every edge to the segment-tree intervals where it is alive, then DFS with rollback DSU.
+
+```cpp
+struct OfflineDynamicConnectivity {
+    int q;
+    vector<vector<pair<int, int>>> seg;
+    RollbackDSU dsu;
+    vector<int> answer;
+
+    OfflineDynamicConnectivity(int n, int q) : q(q), seg(4 * q), dsu(n), answer(q) {}
+
+    void addInterval(int node, int l, int r, int ql, int qr, pair<int, int> edge) {
+        if (qr < l || r < ql) return;
+        if (ql <= l && r <= qr) {
+            seg[node].push_back(edge);
+            return;
+        }
+        int mid = (l + r) / 2;
+        addInterval(node * 2, l, mid, ql, qr, edge);
+        addInterval(node * 2 + 1, mid + 1, r, ql, qr, edge);
+    }
+
+    void dfs(int node, int l, int r) {
+        int snap = dsu.snapshot();
+        for (auto [u, v] : seg[node]) dsu.unite(u, v);
+        if (l == r) {
+            answer[l] = dsu.comps;
+        } else {
+            int mid = (l + r) / 2;
+            dfs(node * 2, l, mid);
+            dfs(node * 2 + 1, mid + 1, r);
+        }
+        dsu.rollback(snap);
+    }
+};
+```
+
+#### Segment Tree Beats, Range Chmin and Sum
+
+Use when updates are `a[i] = min(a[i], x)` and queries ask sums/max. Complexity is amortized `O(log n)`.
+
+```cpp
+struct SegTreeBeats {
+    struct Node {
+        long long sum = 0;
+        int mx = INT_MIN, secondMx = INT_MIN, cntMx = 0;
+    };
+    int n;
+    vector<Node> st;
+
+    SegTreeBeats(const vector<int>& a = {}) { if (!a.empty()) build(a); }
+
+    Node merge(Node a, Node b) {
+        Node c;
+        c.sum = a.sum + b.sum;
+        if (a.mx == b.mx) {
+            c.mx = a.mx;
+            c.cntMx = a.cntMx + b.cntMx;
+            c.secondMx = max(a.secondMx, b.secondMx);
+        } else if (a.mx > b.mx) {
+            c.mx = a.mx;
+            c.cntMx = a.cntMx;
+            c.secondMx = max(a.secondMx, b.mx);
+        } else {
+            c.mx = b.mx;
+            c.cntMx = b.cntMx;
+            c.secondMx = max(a.mx, b.secondMx);
+        }
+        return c;
+    }
+
+    void build(const vector<int>& a) {
+        n = a.size();
+        st.assign(4 * n, {});
+        build(1, 0, n - 1, a);
+    }
+    void build(int p, int l, int r, const vector<int>& a) {
+        if (l == r) {
+            st[p] = {a[l], a[l], INT_MIN, 1};
+            return;
+        }
+        int m = (l + r) / 2;
+        build(p * 2, l, m, a);
+        build(p * 2 + 1, m + 1, r, a);
+        st[p] = merge(st[p * 2], st[p * 2 + 1]);
+    }
+
+    void applyChmin(int p, int x) {
+        if (x >= st[p].mx) return;
+        st[p].sum -= 1LL * (st[p].mx - x) * st[p].cntMx;
+        st[p].mx = x;
+    }
+    void push(int p) {
+        applyChmin(p * 2, st[p].mx);
+        applyChmin(p * 2 + 1, st[p].mx);
+    }
+    void rangeChmin(int p, int l, int r, int ql, int qr, int x) {
+        if (qr < l || r < ql || x >= st[p].mx) return;
+        if (ql <= l && r <= qr && x > st[p].secondMx) {
+            applyChmin(p, x);
+            return;
+        }
+        push(p);
+        int m = (l + r) / 2;
+        rangeChmin(p * 2, l, m, ql, qr, x);
+        rangeChmin(p * 2 + 1, m + 1, r, ql, qr, x);
+        st[p] = merge(st[p * 2], st[p * 2 + 1]);
+    }
+    long long querySum(int p, int l, int r, int ql, int qr) {
+        if (qr < l || r < ql) return 0;
+        if (ql <= l && r <= qr) return st[p].sum;
+        push(p);
+        int m = (l + r) / 2;
+        return querySum(p * 2, l, m, ql, qr)
+             + querySum(p * 2 + 1, m + 1, r, ql, qr);
+    }
+};
+```
+
+### Advanced Level: DP Optimizations
+
+#### Divide and Conquer DP Optimization
+
+Use when the optimal split point is monotonic.
+
+```cpp
+void computeDC(int l, int r, int optL, int optR,
+               const vector<long long>& prev, vector<long long>& cur) {
+    if (l > r) return;
+    int mid = (l + r) / 2;
+    pair<long long, int> best = {LINF, -1};
+    for (int k = optL; k <= min(mid, optR); k++) {
+        long long val = prev[k] + cost(k, mid); // define cost separately
+        best = min(best, {val, k});
+    }
+    cur[mid] = best.first;
+    int opt = best.second;
+    computeDC(l, mid - 1, optL, opt, prev, cur);
+    computeDC(mid + 1, r, opt, optR, prev, cur);
+}
+```
+
+#### Knuth Optimization Skeleton
+
+Use for interval DP when quadrangle inequality and monotone opt hold.
+
+```cpp
+void knuthDP(int n) {
+    vector<vector<long long>> dp(n, vector<long long>(n));
+    vector<vector<int>> opt(n, vector<int>(n));
+    for (int i = 0; i < n; i++) opt[i][i] = i;
+    for (int len = 2; len <= n; len++) {
+        for (int l = 0; l + len - 1 < n; l++) {
+            int r = l + len - 1;
+            dp[l][r] = LINF;
+            for (int k = opt[l][r - 1]; k <= opt[l + 1][r]; k++) {
+                long long val = dp[l][k] + dp[k + 1][r] + cost(l, r); // define cost
+                if (val < dp[l][r]) {
+                    dp[l][r] = val;
+                    opt[l][r] = k;
+                }
+            }
+        }
+    }
+}
+```
+
+#### Convex Hull Trick for Monotonic Lines and Queries
+
+Use when slopes and query `x` are monotonic.
+
+```cpp
+struct Line {
+    long long m, b;
+    long long value(long long x) const { return m * x + b; }
+};
+
+bool bad(const Line& a, const Line& b, const Line& c) {
+    return (__int128)(b.b - a.b) * (a.m - c.m)
+        >= (__int128)(c.b - a.b) * (a.m - b.m);
+}
+
+struct CHT {
+    deque<Line> dq;
+    void add(long long m, long long b) {
+        Line ln{m, b};
+        while (dq.size() >= 2 && bad(dq[dq.size() - 2], dq.back(), ln)) dq.pop_back();
+        dq.push_back(ln);
+    }
+    long long query(long long x) {
+        while (dq.size() >= 2 && dq[0].value(x) >= dq[1].value(x)) dq.pop_front();
+        return dq.front().value(x);
+    }
+};
+```
+
+#### Li Chao Tree
+
+Use for arbitrary line insertions and min queries over fixed integer `x` domain.
+
+```cpp
+struct LiChao {
+    struct Line {
+        long long m, b;
+        long long get(long long x) const { return m * x + b; }
+    };
+    struct Node {
+        Line line;
+        Node *left = nullptr, *right = nullptr;
+        Node(Line line) : line(line) {}
+    };
+    long long L, R;
+    Node* root = nullptr;
+    LiChao(long long L, long long R) : L(L), R(R) {}
+
+    void addLine(Line nw) { addLine(root, L, R, nw); }
+    void addLine(Node*& node, long long l, long long r, Line nw) {
+        if (!node) {
+            node = new Node(nw);
+            return;
+        }
+        long long mid = (l + r) / 2;
+        bool lef = nw.get(l) < node->line.get(l);
+        bool m = nw.get(mid) < node->line.get(mid);
+        if (m) swap(nw, node->line);
+        if (l == r) return;
+        if (lef != m) addLine(node->left, l, mid, nw);
+        else addLine(node->right, mid + 1, r, nw);
+    }
+
+    long long query(long long x) { return query(root, L, R, x); }
+    long long query(Node* node, long long l, long long r, long long x) {
+        if (!node) return LINF;
+        long long ans = node->line.get(x);
+        if (l == r) return ans;
+        long long mid = (l + r) / 2;
+        if (x <= mid) return min(ans, query(node->left, l, mid, x));
+        return min(ans, query(node->right, mid + 1, r, x));
+    }
+};
+```
+
+### Advanced Level: Tree and Sequence Structures
+
+#### DSU on Tree / Small-to-Large
+
+Use for subtree color-frequency queries in `O(n log n)` or `O(n)` depending on operations.
+
+```cpp
+struct DSUOnTree {
+    int n;
+    vector<vector<int>> g;
+    vector<int> color, sub, heavy, cnt, ans;
+    int bestColor = 0, bestFreq = 0;
+
+    DSUOnTree(vector<vector<int>> g, vector<int> color)
+        : n(g.size()), g(move(g)), color(move(color)), sub(n), heavy(n, -1), ans(n) {
+        cnt.assign(n + 1, 0);
+        dfsSize(0, -1);
+        dfs(0, -1, true);
+    }
+
+    int dfsSize(int u, int p) {
+        sub[u] = 1;
+        int mx = 0;
+        for (int v : g[u]) if (v != p) {
+            sub[u] += dfsSize(v, u);
+            if (sub[v] > mx) mx = sub[v], heavy[u] = v;
+        }
+        return sub[u];
+    }
+
+    void addSubtree(int u, int p, int delta) {
+        int c = color[u];
+        cnt[c] += delta;
+        if (cnt[c] > bestFreq) bestFreq = cnt[c], bestColor = c;
+        for (int v : g[u]) if (v != p) addSubtree(v, u, delta);
+    }
+
+    void dfs(int u, int p, bool keep) {
+        for (int v : g[u]) if (v != p && v != heavy[u]) dfs(v, u, false);
+        if (heavy[u] != -1) dfs(heavy[u], u, true);
+        for (int v : g[u]) if (v != p && v != heavy[u]) addSubtree(v, u, 1);
+        cnt[color[u]]++;
+        if (cnt[color[u]] > bestFreq) bestFreq = cnt[color[u]], bestColor = color[u];
+        ans[u] = bestColor;
+        if (!keep) {
+            addSubtree(u, p, -1);
+            bestColor = bestFreq = 0; // recompute logic may be needed for different query types
+        }
+    }
+};
+```
+
+#### Implicit Treap
+
+Use for dynamic arrays with split/merge, range reverse, insert, erase.
+
+```cpp
+struct Treap {
+    struct Node {
+        int val, prio, sz = 1;
+        bool rev = false;
+        Node *l = nullptr, *r = nullptr;
+        Node(int v) : val(v), prio((rand() << 16) ^ rand()) {}
+    };
+
+    int sz(Node* t) { return t ? t->sz : 0; }
+    void push(Node* t) {
+        if (!t || !t->rev) return;
+        swap(t->l, t->r);
+        if (t->l) t->l->rev ^= 1;
+        if (t->r) t->r->rev ^= 1;
+        t->rev = false;
+    }
+    void pull(Node* t) {
+        if (t) t->sz = 1 + sz(t->l) + sz(t->r);
+    }
+    void split(Node* t, int k, Node*& a, Node*& b) {
+        if (!t) {
+            a = b = nullptr;
+            return;
+        }
+        push(t);
+        if (sz(t->l) >= k) {
+            split(t->l, k, a, t->l);
+            b = t;
+        } else {
+            split(t->r, k - sz(t->l) - 1, t->r, b);
+            a = t;
+        }
+        pull(t);
+    }
+    Node* merge(Node* a, Node* b) {
+        if (!a || !b) return a ? a : b;
+        if (a->prio > b->prio) {
+            push(a);
+            a->r = merge(a->r, b);
+            pull(a);
+            return a;
+        }
+        push(b);
+        b->l = merge(a, b->l);
+        pull(b);
+        return b;
+    }
+    void reverseRange(Node*& root, int l, int r) {
+        Node *a, *b, *c;
+        split(root, l, a, b);
+        split(b, r - l + 1, b, c);
+        if (b) b->rev ^= 1;
+        root = merge(a, merge(b, c));
+    }
+};
+```
+
+#### Link-Cut Tree Skeleton
+
+Use for dynamic forest connectivity and path queries. This skeleton supports link, cut, and connected.
+
+```cpp
+struct LinkCut {
+    struct Node {
+        int ch[2] = {0, 0}, p = 0;
+        bool rev = false;
+    };
+    vector<Node> t;
+    LinkCut(int n = 0) : t(n + 1) {}
+
+    bool isRoot(int x) {
+        int p = t[x].p;
+        return p == 0 || (t[p].ch[0] != x && t[p].ch[1] != x);
+    }
+    void push(int x) {
+        if (!x || !t[x].rev) return;
+        swap(t[x].ch[0], t[x].ch[1]);
+        if (t[x].ch[0]) t[t[x].ch[0]].rev ^= 1;
+        if (t[x].ch[1]) t[t[x].ch[1]].rev ^= 1;
+        t[x].rev = false;
+    }
+    void rotate(int x) {
+        int p = t[x].p, g = t[p].p;
+        push(p); push(x);
+        int dir = (t[p].ch[1] == x);
+        int b = t[x].ch[dir ^ 1];
+        if (!isRoot(p)) t[g].ch[t[g].ch[1] == p] = x;
+        t[x].p = g;
+        t[x].ch[dir ^ 1] = p;
+        t[p].p = x;
+        t[p].ch[dir] = b;
+        if (b) t[b].p = p;
+    }
+    void splay(int x) {
+        static vector<int> stk;
+        stk.clear();
+        int y = x;
+        stk.push_back(y);
+        while (!isRoot(y)) y = t[y].p, stk.push_back(y);
+        while (!stk.empty()) push(stk.back()), stk.pop_back();
+        while (!isRoot(x)) {
+            int p = t[x].p, g = t[p].p;
+            if (!isRoot(p)) {
+                bool zigzig = (t[p].ch[0] == x) == (t[g].ch[0] == p);
+                rotate(zigzig ? p : x);
+            }
+            rotate(x);
+        }
+    }
+    void access(int x) {
+        for (int y = 0; x; y = x, x = t[x].p) {
+            splay(x);
+            t[x].ch[1] = y;
+        }
+    }
+    void makeRoot(int x) {
+        access(x);
+        splay(x);
+        t[x].rev ^= 1;
+    }
+    int findRoot(int x) {
+        access(x);
+        splay(x);
+        push(x);
+        while (t[x].ch[0]) {
+            x = t[x].ch[0];
+            push(x);
+        }
+        splay(x);
+        return x;
+    }
+    bool connected(int a, int b) {
+        return findRoot(a) == findRoot(b);
+    }
+    void link(int a, int b) {
+        makeRoot(a);
+        if (findRoot(b) != a) t[a].p = b;
+    }
+    void cut(int a, int b) {
+        makeRoot(a);
+        access(b);
+        splay(b);
+        if (t[b].ch[0] == a && t[a].ch[1] == 0) {
+            t[b].ch[0] = 0;
+            t[a].p = 0;
+        }
+    }
+};
+```
+
+### ICPC-Hard: Matching and String Palindrome Structures
+
+#### Hungarian Algorithm for Minimum Cost Assignment
+
+Use for square or padded rectangular assignment. Complexity: `O(n^3)`.
+
+```cpp
+long long hungarian(const vector<vector<long long>>& a) {
+    int n = a.size(), m = a[0].size();
+    vector<long long> u(n + 1), v(m + 1);
+    vector<int> p(m + 1), way(m + 1);
+    for (int i = 1; i <= n; i++) {
+        p[0] = i;
+        int j0 = 0;
+        vector<long long> minv(m + 1, LINF);
+        vector<char> used(m + 1, false);
+        do {
+            used[j0] = true;
+            int i0 = p[j0], j1 = 0;
+            long long delta = LINF;
+            for (int j = 1; j <= m; j++) if (!used[j]) {
+                long long cur = a[i0 - 1][j - 1] - u[i0] - v[j];
+                if (cur < minv[j]) minv[j] = cur, way[j] = j0;
+                if (minv[j] < delta) delta = minv[j], j1 = j;
+            }
+            for (int j = 0; j <= m; j++) {
+                if (used[j]) u[p[j]] += delta, v[j] -= delta;
+                else minv[j] -= delta;
+            }
+            j0 = j1;
+        } while (p[j0] != 0);
+        do {
+            int j1 = way[j0];
+            p[j0] = p[j1];
+            j0 = j1;
+        } while (j0 != 0);
+    }
+    return -v[0];
+}
+```
+
+#### Palindromic Tree / Eertree
+
+Use for distinct palindromic substrings online.
+
+```cpp
+struct Eertree {
+    struct Node {
+        int len, link;
+        map<char, int> next;
+        int occ = 0;
+    };
+    vector<Node> t;
+    string s;
+    int suff;
+
+    Eertree() {
+        t.push_back({-1, 0, {}, 0});
+        t.push_back({0, 0, {}, 0});
+        suff = 1;
+    }
+
+    int getLink(int v, int pos) {
+        while (true) {
+            int l = t[v].len;
+            if (pos - 1 - l >= 0 && s[pos - 1 - l] == s[pos]) return v;
+            v = t[v].link;
+        }
+    }
+
+    void addChar(char c) {
+        s += c;
+        int pos = s.size() - 1;
+        int cur = getLink(suff, pos);
+        if (!t[cur].next.count(c)) {
+            int now = t.size();
+            t.push_back({t[cur].len + 2, 0, {}, 0});
+            if (t[now].len == 1) t[now].link = 1;
+            else {
+                int linkCandidate = getLink(t[cur].link, pos);
+                t[now].link = t[linkCandidate].next[c];
+            }
+            t[cur].next[c] = now;
+        }
+        suff = t[cur].next[c];
+        t[suff].occ++;
+    }
+};
+```
+
+#### Edmonds Blossom for General Graph Maximum Matching
+
+Use when matching is not bipartite. Complexity: `O(n^3)`.
+
+```cpp
+struct Blossom {
+    int n;
+    vector<vector<int>> g;
+    vector<int> match, p, base, q;
+    vector<bool> used, blossom;
+
+    Blossom(int n) : n(n), g(n), match(n, -1), p(n), base(n), q(n), used(n), blossom(n) {}
+    void addEdge(int u, int v) {
+        g[u].push_back(v);
+        g[v].push_back(u);
+    }
+
+    int lca(int a, int b) {
+        vector<bool> usedPath(n, false);
+        while (true) {
+            a = base[a];
+            usedPath[a] = true;
+            if (match[a] == -1) break;
+            a = p[match[a]];
+        }
+        while (true) {
+            b = base[b];
+            if (usedPath[b]) return b;
+            b = p[match[b]];
+        }
+    }
+
+    void markPath(int v, int b, int child) {
+        while (base[v] != b) {
+            blossom[base[v]] = blossom[base[match[v]]] = true;
+            p[v] = child;
+            child = match[v];
+            v = p[match[v]];
+        }
+    }
+
+    int findPath(int root) {
+        fill(used.begin(), used.end(), false);
+        fill(p.begin(), p.end(), -1);
+        iota(base.begin(), base.end(), 0);
+        int qh = 0, qt = 0;
+        q[qt++] = root;
+        used[root] = true;
+        while (qh < qt) {
+            int v = q[qh++];
+            for (int u : g[v]) {
+                if (base[v] == base[u] || match[v] == u) continue;
+                if (u == root || (match[u] != -1 && p[match[u]] != -1)) {
+                    int curbase = lca(v, u);
+                    fill(blossom.begin(), blossom.end(), false);
+                    markPath(v, curbase, u);
+                    markPath(u, curbase, v);
+                    for (int i = 0; i < n; i++) {
+                        if (blossom[base[i]]) {
+                            base[i] = curbase;
+                            if (!used[i]) used[i] = true, q[qt++] = i;
+                        }
+                    }
+                } else if (p[u] == -1) {
+                    p[u] = v;
+                    if (match[u] == -1) return u;
+                    u = match[u];
+                    used[u] = true;
+                    q[qt++] = u;
+                }
+            }
+        }
+        return -1;
+    }
+
+    int maxMatching() {
+        int matching = 0;
+        for (int i = 0; i < n; i++) if (match[i] == -1) {
+            int v = findPath(i);
+            if (v == -1) continue;
+            while (v != -1) {
+                int pv = p[v], nv = match[pv];
+                match[v] = pv;
+                match[pv] = v;
+                v = nv;
+            }
+            matching++;
+        }
+        return matching;
+    }
+};
+```
+
+### ICPC-Hard: Additional Math, Games, and Graph Extras
+
+#### Matrix Exponentiation
+
+Use for linear recurrences and state transitions repeated many times.
+
+```cpp
+using Matrix = vector<vector<long long>>;
+
+Matrix multiplyMatrix(const Matrix& a, const Matrix& b, long long mod) {
+    int n = a.size(), m = b[0].size(), k = b.size();
+    Matrix c(n, vector<long long>(m));
+    for (int i = 0; i < n; i++) {
+        for (int mid = 0; mid < k; mid++) if (a[i][mid]) {
+            for (int j = 0; j < m; j++) {
+                c[i][j] = (c[i][j] + (__int128)a[i][mid] * b[mid][j]) % mod;
+            }
+        }
+    }
+    return c;
+}
+
+Matrix matrixPower(Matrix a, long long e, long long mod) {
+    int n = a.size();
+    Matrix r(n, vector<long long>(n));
+    for (int i = 0; i < n; i++) r[i][i] = 1;
+    while (e) {
+        if (e & 1) r = multiplyMatrix(r, a, mod);
+        a = multiplyMatrix(a, a, mod);
+        e >>= 1;
+    }
+    return r;
+}
+```
+
+#### Sprague-Grundy for DAG Games
+
+Use for impartial games where states form a DAG.
+
+```cpp
+int grundy(int u, const vector<vector<int>>& moves, vector<int>& memo) {
+    if (memo[u] != -1) return memo[u];
+    set<int> seen;
+    for (int v : moves[u]) seen.insert(grundy(v, moves, memo));
+    int g = 0;
+    while (seen.count(g)) g++;
+    return memo[u] = g;
+}
+
+bool firstPlayerWins(const vector<int>& pileStates,
+                     const vector<vector<int>>& moves) {
+    vector<int> memo(moves.size(), -1);
+    int xr = 0;
+    for (int s : pileStates) xr ^= grundy(s, moves, memo);
+    return xr != 0;
+}
+```
+
+#### Reservoir Sampling
+
+Use to pick one random item from a stream without knowing its length.
+
+```cpp
+template <class T>
+T reservoirSample(istream& in) {
+    mt19937 rng(chrono::steady_clock::now().time_since_epoch().count());
+    T x, ans{};
+    long long cnt = 0;
+    while (in >> x) {
+        cnt++;
+        if (uniform_int_distribution<long long>(1, cnt)(rng) == 1) ans = x;
+    }
+    return ans;
+}
+```
+
+#### Lengauer-Tarjan Dominator Tree
+
+Use in directed flow graphs to find immediate dominators from a start node.
+
+```cpp
+struct DominatorTree {
+    int n, timer = 0;
+    vector<vector<int>> g, rg, bucket;
+    vector<int> arr, rev, par, sdom, dom, dsu, label;
+
+    DominatorTree(const vector<vector<int>>& graph, int src) : n(graph.size()), g(graph) {
+        rg.assign(n, {});
+        bucket.assign(n, {});
+        arr.assign(n, -1);
+        rev.assign(n, -1);
+        par.assign(n, -1);
+        sdom.resize(n);
+        dom.resize(n);
+        dsu.resize(n);
+        label.resize(n);
+        dfs(src);
+        int N = timer;
+        for (int i = 0; i < N; i++) sdom[i] = dom[i] = dsu[i] = label[i] = i;
+
+        for (int i = N - 1; i >= 0; i--) {
+            for (int v : rg[i]) sdom[i] = min(sdom[i], sdom[find(v)]);
+            if (i > 0) bucket[sdom[i]].push_back(i);
+            for (int v : bucket[i]) {
+                int y = find(v);
+                dom[v] = (sdom[y] == sdom[v]) ? sdom[v] : y;
+            }
+            if (i > 0) unite(par[i], i);
+        }
+        for (int i = 1; i < N; i++) {
+            if (dom[i] != sdom[i]) dom[i] = dom[dom[i]];
+        }
+        // dom[index] is an index in DFS order; rev[dom[arr[v]]] is immediate dominator of v.
+    }
+
+    void dfs(int u) {
+        arr[u] = timer;
+        rev[timer] = u;
+        timer++;
+        for (int w : g[u]) {
+            if (arr[w] == -1) {
+                dfs(w);
+                par[arr[w]] = arr[u];
+            }
+            rg[arr[w]].push_back(arr[u]);
+        }
+    }
+
+    int find(int u, int x = 0) {
+        if (u == dsu[u]) return x ? -1 : u;
+        int v = find(dsu[u], x + 1);
+        if (v < 0) return u;
+        if (sdom[label[dsu[u]]] < sdom[label[u]]) label[u] = label[dsu[u]];
+        dsu[u] = v;
+        return x ? v : label[u];
+    }
+
+    void unite(int u, int v) {
+        dsu[v] = u;
+    }
+
+    int immediateDominator(int v) {
+        if (arr[v] <= 0) return -1;
+        return rev[dom[arr[v]]];
+    }
+};
+```
+
+### Final Template Checklist
+
+Before treating any template as memorized, verify:
+
+- You can state the invariant in one sentence.
+- You know which inputs break the assumptions.
+- You can explain every array's indexing convention.
+- You can write a brute force checker for small random cases.
+- You have tested empty, single-element, duplicate, disconnected, and maximum-size cases.
+- You know whether the graph is directed or undirected.
+- You know whether weights can be negative.
+- You know whether updates are online or can be processed offline.
+- You know whether the operation is associative, idempotent, invertible, or monotonic.
