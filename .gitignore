@@ -1,0 +1,23 @@
+# Local/generated analysis artifacts
+*.folded.txt
+*.grouped-stacks.txt
+*.verify.txt
+grouped_backtraces.txt
+callstack_analysis_atcpd01/
+
+# Generated report bundles
+*.pdf
+*.zip
+oracle_internship_*.md
+atcpd_perf_comparison_report.md
+
+# Local helper scripts and context
+AI_CONTEXT.md
+generate_oracle_internship_pdf.py
+group_call_stacks_for_comparison.py
+group_perf_stacks.py
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
