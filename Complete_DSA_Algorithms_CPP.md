@@ -2,10 +2,11 @@
 
 An in-depth handbook for learning Data Structures and Algorithms from scratch, preparing for coding interviews, competitive programming, ICPC-style contests, and advanced algorithmic problem solving.
 
-This file is written for practical C++17/C++20 use. It emphasizes invariants, recognition signals, complexity, implementation hazards, and contest-ready templates.
+This file is written for practical C++17/C++20 use. The explanations try to stay simple first, then go deeper. Each important topic should answer: what is it, when should I use it, when should I avoid it, how fast is it, what mistakes happen, and how do I solve a real problem with it?
 
 ## Table of Contents
 
+- [0. Beginner-Friendly Topic Packs](#0-beginner-friendly-topic-packs)
 - [1. Foundations](#1-foundations)
 - [2. Basic Data Structures](#2-basic-data-structures)
 - [3. Searching and Sorting](#3-searching-and-sorting)
@@ -30,29 +31,1311 @@ This file is written for practical C++17/C++20 use. It emphasizes invariants, re
 
 ## How to Study This Handbook
 
-- First pass: read the mental models and recognition signals.
-- Second pass: implement the templates without looking.
-- Third pass: solve problems that isolate each technique.
-- Fourth pass: mix topics under time pressure.
-- For every topic, ask: what invariant is preserved, what constraints justify it, and what counterexample breaks a naive approach?
+- First pass: read one topic pack fully. Do not jump around.
+- Second pass: type the code by hand without copying.
+- Third pass: solve the included example again from memory.
+- Fourth pass: try the linked practice problems.
+- Fifth pass: come back to the deeper reference section for that same topic.
+- For every topic, ask: what problem does this solve, what rule makes it work, what input breaks it, and what is the time complexity?
 
 
 For each algorithm or data structure, use this review checklist:
 
-1. What is the mathematical object being maintained or optimized?
-2. What is the invariant after every step?
-3. Why does the transition preserve the invariant?
-4. What exact problem pattern triggers this tool?
-5. Which constraints make it necessary?
-6. Which assumptions can break it?
-7. What is the time complexity and why?
-8. What is the memory complexity and why?
-9. Which indices are inclusive, exclusive, 0-based, or 1-based?
-10. What are the empty, single-element, duplicate, negative, and maximum-size cases?
-11. What can overflow?
-12. What should be brute-forced for stress testing?
-13. What alternative algorithm would work if constraints changed?
-14. What part of the proof would you explain to an interviewer or teammate?
+1. What does the algorithm store or compute?
+2. What stays true after every step?
+3. Why does the answer not miss anything?
+4. Which problem words suggest this topic?
+5. Which constraints make this algorithm fast enough?
+6. Which assumption can break the solution?
+7. What is the time complexity?
+8. What is the memory complexity?
+9. Are indices 0-based or 1-based?
+10. What happens for empty, single-element, duplicate, negative, and huge inputs?
+11. Can `int` overflow?
+12. Can I brute force small tests to check this?
+13. What would I use if constraints changed?
+14. Can I explain the solution in plain English?
+
+
+
+## 0. Beginner-Friendly Topic Packs
+
+Read this section before the deep reference. Each topic pack keeps the important learning pieces in one place:
+
+- plain idea
+- when to use it
+- when not to use it
+- complexity
+- common mistakes
+- one solved problem statement
+- C++ solution
+- LeetCode practice links
+
+The later sections of this handbook still contain the bigger theory lists and advanced templates. This section is the guided path.
+
+### Plain-English Glossary
+
+| Word | Simple meaning |
+|---|---|
+| invariant | A rule that stays true while the algorithm runs. |
+| monotonic | Always moving in one direction: increasing, decreasing, true-to-false, or false-to-true. |
+| brute force | Try all possibilities directly. Usually simple but slow. |
+| state | The information needed to describe where you are in a problem. |
+| transition | The move from one state to another. |
+| greedy | Make the best-looking choice now, and prove it will not hurt later. |
+| amortized | Average cost over many operations, even if one operation can be expensive. |
+| online | Process queries as they arrive. You cannot reorder them. |
+| offline | You know all queries first, so you may reorder or preprocess them. |
+| static | The data does not change. |
+| dynamic | The data changes through updates. |
+| idempotent | Repeating the same operation does not change the result, like `min(x, x) = x`. |
+
+### Learning Ladder
+
+| Stage | Learn these before moving on |
+|---|---|
+| 1 | Arrays, strings, sorting, binary search, prefix sums. |
+| 2 | Two pointers, sliding window, stack, queue, heap, hash map. |
+| 3 | Recursion, backtracking, basic DP. |
+| 4 | Trees, BFS, DFS, topological sort, DSU. |
+| 5 | Dijkstra, MST, Fenwick tree, segment tree, trie, KMP. |
+| 6 | Advanced DP, SCC, bridges, flow, matching, suffix structures, number theory, geometry. |
+
+Do not rush. A good rule is: before starting the next row, solve at least 3 to 5 problems from the current row.
+
+### Pack 1: Prefix Sum
+
+**Plain idea:** Store running sums so range sums become instant.
+
+**Use when:**
+
+- Array does not change.
+- Many queries ask for sum from `l` to `r`.
+- You need subarray sum tricks.
+
+**Do not use when:**
+
+- There are many updates. Use Fenwick tree or segment tree.
+- You need range minimum or maximum. Prefix sums only work for operations that can be undone by subtraction.
+
+**Complexity:** Build `O(n)`, each query `O(1)`, memory `O(n)`.
+
+**Common mistakes:**
+
+- Mixing 0-based and 1-based indices.
+- Forgetting that `pref[i]` often means sum of first `i` elements, not up to index `i`.
+- Overflowing `int`; use `long long`.
+
+**Solved problem statement:** Given an array and many queries `(l, r)`, return the sum from index `l` to index `r`, inclusive.
+
+```cpp
+vector<long long> build_prefix(const vector<int>& a) {
+    int n = a.size();
+    vector<long long> pref(n + 1, 0);
+    for (int i = 0; i < n; i++) {
+        pref[i + 1] = pref[i] + a[i];
+    }
+    return pref;
+}
+
+long long range_sum(const vector<long long>& pref, int l, int r) {
+    return pref[r + 1] - pref[l];
+}
+```
+
+**Practice links:**
+
+- [Range Sum Query - Immutable](https://leetcode.com/problems/range-sum-query-immutable/)
+- [Subarray Sum Equals K](https://leetcode.com/problems/subarray-sum-equals-k/)
+- [Product of Array Except Self](https://leetcode.com/problems/product-of-array-except-self/)
+
+### Pack 2: Binary Search
+
+**Plain idea:** Repeatedly cut the search space in half.
+
+**Use when:**
+
+- Data is sorted.
+- Or the answer has a yes/no pattern like `false false false true true`.
+- You need the first position where something becomes true.
+
+**Do not use when:**
+
+- The condition is not monotonic.
+- The array is unsorted and you are searching by value without preprocessing.
+
+**Complexity:** `O(log n)` for normal search. For binary search on answer: `O(log answer_range * cost_of_check)`.
+
+**Common mistakes:**
+
+- Infinite loop from wrong `mid` update.
+- Using `(l + r) / 2` when values can overflow. Use `l + (r - l) / 2`.
+- Choosing `<` instead of `<=` incorrectly.
+
+**Solved problem statement:** Given sorted array `a` and target `x`, return the first index where `a[index] >= x`. If no such index exists, return `n`.
+
+```cpp
+int first_greater_equal(const vector<int>& a, int x) {
+    int l = 0, r = a.size(); // answer is in [0, n]
+    while (l < r) {
+        int mid = l + (r - l) / 2;
+        if (a[mid] >= x) r = mid;
+        else l = mid + 1;
+    }
+    return l;
+}
+```
+
+**Practice links:**
+
+- [Binary Search](https://leetcode.com/problems/binary-search/)
+- [Search Insert Position](https://leetcode.com/problems/search-insert-position/)
+- [Koko Eating Bananas](https://leetcode.com/problems/koko-eating-bananas/)
+
+### Pack 3: Two Pointers
+
+**Plain idea:** Use two indices that move through the array. Each pointer moves only forward or inward, so the solution stays fast.
+
+**Use when:**
+
+- Array is sorted.
+- You are looking for pairs, triplets, or a window.
+- Moving one pointer has a predictable effect.
+
+**Do not use when:**
+
+- You need to try all unrelated pairs.
+- Moving pointers does not preserve useful information.
+
+**Complexity:** Usually `O(n)` after sorting, or `O(n log n)` including sorting.
+
+**Common mistakes:**
+
+- Forgetting to sort when the logic needs sorted order.
+- Not skipping duplicates in 3Sum-style problems.
+- Moving the wrong pointer.
+
+**Solved problem statement:** Given a sorted array and target, return whether two numbers sum to target.
+
+```cpp
+bool has_pair_sum(vector<int> a, int target) {
+    int l = 0, r = (int)a.size() - 1;
+    while (l < r) {
+        int sum = a[l] + a[r];
+        if (sum == target) return true;
+        if (sum < target) l++;
+        else r--;
+    }
+    return false;
+}
+```
+
+**Practice links:**
+
+- [Two Sum II - Input Array Is Sorted](https://leetcode.com/problems/two-sum-ii-input-array-is-sorted/)
+- [Container With Most Water](https://leetcode.com/problems/container-with-most-water/)
+- [3Sum](https://leetcode.com/problems/3sum/)
+
+### Pack 4: Sliding Window
+
+**Plain idea:** Keep a valid subarray window `[l, r]`. Expand with `r`, shrink with `l`.
+
+**Use when:**
+
+- The problem asks for longest, shortest, or count of subarrays/substrings.
+- Removing from the left helps fix the window.
+- The condition can be maintained with counts, sum, or frequency map.
+
+**Do not use when:**
+
+- The window condition is not repairable by moving `l`.
+- Negative numbers break a sum-based monotonic condition.
+
+**Complexity:** Usually `O(n)`.
+
+**Common mistakes:**
+
+- Updating the answer before the window is valid.
+- Forgetting to decrement frequency when moving `l`.
+- Using sliding window with negative numbers when prefix sum or hash map is needed.
+
+**Solved problem statement:** Given a string, return the length of the longest substring with no repeated characters.
+
+```cpp
+int longest_unique_substring(const string& s) {
+    vector<int> last(256, -1);
+    int ans = 0, l = 0;
+    for (int r = 0; r < (int)s.size(); r++) {
+        unsigned char ch = s[r];
+        if (last[ch] >= l) l = last[ch] + 1;
+        last[ch] = r;
+        ans = max(ans, r - l + 1);
+    }
+    return ans;
+}
+```
+
+**Practice links:**
+
+- [Longest Substring Without Repeating Characters](https://leetcode.com/problems/longest-substring-without-repeating-characters/)
+- [Minimum Window Substring](https://leetcode.com/problems/minimum-window-substring/)
+- [Max Consecutive Ones III](https://leetcode.com/problems/max-consecutive-ones-iii/)
+
+### Pack 5: Monotonic Stack
+
+**Plain idea:** Keep a stack whose values are always increasing or decreasing. When a new value breaks the order, it becomes the answer for older values.
+
+**Use when:**
+
+- You need next greater, next smaller, previous greater, or previous smaller.
+- The problem asks for nearest bigger/smaller element.
+- Histogram or temperature-style problems appear.
+
+**Do not use when:**
+
+- You need all greater elements, not the nearest one.
+- The order of elements does not matter.
+
+**Complexity:** `O(n)` because every index is pushed and popped at most once.
+
+**Common mistakes:**
+
+- Using `<` when you need `<=`, especially with duplicates.
+- Storing values when you need indices.
+- Thinking the stack is sorted globally. It only stores useful candidates.
+
+**Solved problem statement:** For every index, return the index of the next element to the right that is greater. If none exists, return `-1`.
+
+```cpp
+vector<int> next_greater_index(const vector<int>& a) {
+    int n = a.size();
+    vector<int> ans(n, -1), st;
+    for (int i = 0; i < n; i++) {
+        while (!st.empty() && a[st.back()] < a[i]) {
+            ans[st.back()] = i;
+            st.pop_back();
+        }
+        st.push_back(i);
+    }
+    return ans;
+}
+```
+
+**Practice links:**
+
+- [Daily Temperatures](https://leetcode.com/problems/daily-temperatures/)
+- [Next Greater Element I](https://leetcode.com/problems/next-greater-element-i/)
+- [Largest Rectangle in Histogram](https://leetcode.com/problems/largest-rectangle-in-histogram/)
+
+### Pack 6: Hash Map Counting
+
+**Plain idea:** Store counts or first positions in a hash map so you can answer "have I seen this before?" quickly.
+
+**Use when:**
+
+- You need frequencies.
+- You need pairs with a target sum.
+- You need prefix sums seen earlier.
+
+**Do not use when:**
+
+- You need sorted order. Use `map`, `set`, heap, or sorting.
+- Hash collision attacks are possible and the judge is adversarial. Use custom hash.
+
+**Complexity:** Average `O(1)` per operation, worst case can degrade.
+
+**Common mistakes:**
+
+- Using `mp[x]` only to check existence, which inserts `x`.
+- Forgetting duplicates.
+- Not using `long long` for prefix sums.
+
+**Solved problem statement:** Count subarrays with sum exactly `k`.
+
+```cpp
+int subarray_sum_equals_k(const vector<int>& a, int k) {
+    unordered_map<long long, int> freq;
+    freq[0] = 1;
+    long long pref = 0;
+    int ans = 0;
+    for (int x : a) {
+        pref += x;
+        if (freq.count(pref - k)) ans += freq[pref - k];
+        freq[pref]++;
+    }
+    return ans;
+}
+```
+
+**Practice links:**
+
+- [Two Sum](https://leetcode.com/problems/two-sum/)
+- [Subarray Sum Equals K](https://leetcode.com/problems/subarray-sum-equals-k/)
+- [Group Anagrams](https://leetcode.com/problems/group-anagrams/)
+
+### Pack 7: Heap / Priority Queue
+
+**Plain idea:** Keep quick access to the smallest or largest item while items are added and removed.
+
+**Use when:**
+
+- You repeatedly need current minimum or maximum.
+- You need top `k` elements.
+- Greedy choice depends on best available item.
+
+**Do not use when:**
+
+- You need to search arbitrary elements quickly.
+- You need sorted traversal of all elements. Use sorting or set.
+
+**Complexity:** Push/pop `O(log n)`, top `O(1)`.
+
+**Common mistakes:**
+
+- C++ `priority_queue<int>` is a max-heap by default.
+- Forgetting lazy deletion for outdated entries.
+- Putting pair fields in the wrong order.
+
+**Solved problem statement:** Return the `k` most frequent numbers.
+
+```cpp
+vector<int> top_k_frequent(vector<int>& nums, int k) {
+    unordered_map<int, int> freq;
+    for (int x : nums) freq[x]++;
+
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+    for (auto [x, f] : freq) {
+        pq.push({f, x});
+        if ((int)pq.size() > k) pq.pop();
+    }
+
+    vector<int> ans;
+    while (!pq.empty()) {
+        ans.push_back(pq.top().second);
+        pq.pop();
+    }
+    return ans;
+}
+```
+
+**Practice links:**
+
+- [Kth Largest Element in an Array](https://leetcode.com/problems/kth-largest-element-in-an-array/)
+- [Top K Frequent Elements](https://leetcode.com/problems/top-k-frequent-elements/)
+- [Find Median from Data Stream](https://leetcode.com/problems/find-median-from-data-stream/)
+
+### Pack 8: Recursion and Backtracking
+
+**Plain idea:** Build an answer step by step. If a choice fails, undo it and try another choice.
+
+**Use when:**
+
+- You need all subsets, permutations, combinations, paths, or board placements.
+- Constraints are small enough for exponential search.
+- You can prune bad choices early.
+
+**Do not use when:**
+
+- `n` is too large for exponential choices.
+- A DP or greedy solution exists and avoids repeated work.
+
+**Complexity:** Depends on the number of generated states. Subsets are `O(2^n)`, permutations are `O(n!)`.
+
+**Common mistakes:**
+
+- Forgetting to undo a choice.
+- Passing large vectors by value accidentally.
+- Missing duplicate handling.
+
+**Solved problem statement:** Generate all subsets of an array.
+
+```cpp
+void dfs_subsets(int i, const vector<int>& a, vector<int>& cur, vector<vector<int>>& ans) {
+    if (i == (int)a.size()) {
+        ans.push_back(cur);
+        return;
+    }
+    dfs_subsets(i + 1, a, cur, ans);
+    cur.push_back(a[i]);
+    dfs_subsets(i + 1, a, cur, ans);
+    cur.pop_back();
+}
+
+vector<vector<int>> subsets(vector<int>& nums) {
+    vector<vector<int>> ans;
+    vector<int> cur;
+    dfs_subsets(0, nums, cur, ans);
+    return ans;
+}
+```
+
+**Practice links:**
+
+- [Subsets](https://leetcode.com/problems/subsets/)
+- [Permutations](https://leetcode.com/problems/permutations/)
+- [N-Queens](https://leetcode.com/problems/n-queens/)
+
+### Pack 9: Greedy Intervals
+
+**Plain idea:** Sort intervals, then make the locally best choice. You must be able to explain why that choice cannot hurt the future.
+
+**Use when:**
+
+- Intervals have start/end times.
+- You need minimum removals, maximum non-overlapping intervals, or merge coverage.
+- Sorting by end time makes future choices easier.
+
+**Do not use when:**
+
+- A local choice can block a better global answer and no proof exists.
+- The problem has hidden states that require DP.
+
+**Complexity:** Usually `O(n log n)` because of sorting.
+
+**Common mistakes:**
+
+- Sorting by start when the proof needs sorting by end.
+- Confusing overlap rules for closed intervals.
+- Not handling equal endpoints carefully.
+
+**Solved problem statement:** Given intervals, remove the fewest intervals so the rest do not overlap.
+
+```cpp
+int erase_overlap_intervals(vector<vector<int>>& intervals) {
+    sort(intervals.begin(), intervals.end(),
+         [](const vector<int>& a, const vector<int>& b) {
+             return a[1] < b[1];
+         });
+
+    int removed = 0;
+    int lastEnd = INT_MIN;
+    for (auto& in : intervals) {
+        if (in[0] >= lastEnd) {
+            lastEnd = in[1];
+        } else {
+            removed++;
+        }
+    }
+    return removed;
+}
+```
+
+**Practice links:**
+
+- [Merge Intervals](https://leetcode.com/problems/merge-intervals/)
+- [Non-overlapping Intervals](https://leetcode.com/problems/non-overlapping-intervals/)
+- [Minimum Number of Arrows to Burst Balloons](https://leetcode.com/problems/minimum-number-of-arrows-to-burst-balloons/)
+
+### Pack 10: Dynamic Programming
+
+**Plain idea:** Save answers to smaller problems so you do not solve them again.
+
+**Use when:**
+
+- You see "maximum/minimum/count ways".
+- Choices overlap and repeat.
+- A state can describe the remaining problem.
+
+**Do not use when:**
+
+- There are no repeated subproblems.
+- A simpler greedy proof works.
+- State count is too large.
+
+**Complexity:** `number_of_states * work_per_state`.
+
+**Common mistakes:**
+
+- Bad state definition.
+- Missing base cases.
+- Computing states in the wrong order.
+- Forgetting to use `long long` for counts.
+
+**Solved problem statement:** Given coin values and amount, return the fewest coins needed to make the amount, or `-1` if impossible.
+
+```cpp
+int coin_change(vector<int>& coins, int amount) {
+    const int INF = 1e9;
+    vector<int> dp(amount + 1, INF);
+    dp[0] = 0;
+    for (int x = 1; x <= amount; x++) {
+        for (int c : coins) {
+            if (x >= c) dp[x] = min(dp[x], dp[x - c] + 1);
+        }
+    }
+    return dp[amount] >= INF ? -1 : dp[amount];
+}
+```
+
+**Practice links:**
+
+- [Climbing Stairs](https://leetcode.com/problems/climbing-stairs/)
+- [House Robber](https://leetcode.com/problems/house-robber/)
+- [Coin Change](https://leetcode.com/problems/coin-change/)
+- [Longest Common Subsequence](https://leetcode.com/problems/longest-common-subsequence/)
+
+### Pack 11: Tree DFS
+
+**Plain idea:** A tree has no cycles, so DFS can safely go from parent to children and combine child answers.
+
+**Use when:**
+
+- Input is a tree.
+- You need depth, subtree size, path length, ancestor, diameter, or tree DP.
+
+**Do not use when:**
+
+- The graph has cycles and you do not track visited nodes.
+- Recursion depth can exceed stack limits.
+
+**Complexity:** `O(n)`.
+
+**Common mistakes:**
+
+- Forgetting the parent check.
+- Treating a general graph as a tree.
+- Stack overflow on deep trees.
+
+**Solved problem statement:** Given an undirected tree, compute the size of every node's subtree when rooted at `0`.
+
+```cpp
+void subtree_dfs(int u, int p, const vector<vector<int>>& g, vector<int>& sub) {
+    sub[u] = 1;
+    for (int v : g[u]) {
+        if (v == p) continue;
+        subtree_dfs(v, u, g, sub);
+        sub[u] += sub[v];
+    }
+}
+
+vector<int> subtree_sizes(const vector<vector<int>>& g) {
+    vector<int> sub(g.size());
+    subtree_dfs(0, -1, g, sub);
+    return sub;
+}
+```
+
+**Practice links:**
+
+- [Maximum Depth of Binary Tree](https://leetcode.com/problems/maximum-depth-of-binary-tree/)
+- [Diameter of Binary Tree](https://leetcode.com/problems/diameter-of-binary-tree/)
+- [Lowest Common Ancestor of a Binary Tree](https://leetcode.com/problems/lowest-common-ancestor-of-a-binary-tree/)
+
+### Pack 12: BFS and DFS on Graphs
+
+**Plain idea:** BFS explores by distance layers. DFS explores as far as possible before coming back.
+
+**Use BFS when:**
+
+- You need shortest path in an unweighted graph.
+- You need levels or minimum number of moves.
+
+**Use DFS when:**
+
+- You need connected components, cycle detection, or full exploration.
+
+**Do not use when:**
+
+- Edges have different positive weights. Use Dijkstra.
+- Edges have negative weights. Use Bellman-Ford or other tools.
+
+**Complexity:** `O(n + m)`.
+
+**Common mistakes:**
+
+- Not marking visited early enough.
+- Forgetting disconnected components.
+- Mixing grid bounds.
+
+**Solved problem statement:** Given a grid of `0` and `1`, count connected groups of `1`s using 4-direction movement.
+
+```cpp
+int count_islands(vector<vector<char>>& grid) {
+    int n = grid.size();
+    if (n == 0) return 0;
+    int m = grid[0].size(), ans = 0;
+    vector<int> dr = {1, -1, 0, 0};
+    vector<int> dc = {0, 0, 1, -1};
+
+    for (int r = 0; r < n; r++) {
+        for (int c = 0; c < m; c++) {
+            if (grid[r][c] != '1') continue;
+            ans++;
+            queue<pair<int, int>> q;
+            q.push({r, c});
+            grid[r][c] = '0';
+            while (!q.empty()) {
+                auto [x, y] = q.front();
+                q.pop();
+                for (int d = 0; d < 4; d++) {
+                    int nx = x + dr[d], ny = y + dc[d];
+                    if (nx < 0 || ny < 0 || nx >= n || ny >= m) continue;
+                    if (grid[nx][ny] != '1') continue;
+                    grid[nx][ny] = '0';
+                    q.push({nx, ny});
+                }
+            }
+        }
+    }
+    return ans;
+}
+```
+
+**Practice links:**
+
+- [Number of Islands](https://leetcode.com/problems/number-of-islands/)
+- [Clone Graph](https://leetcode.com/problems/clone-graph/)
+- [Rotting Oranges](https://leetcode.com/problems/rotting-oranges/)
+
+### Pack 13: Topological Sort
+
+**Plain idea:** Put directed tasks in an order where every prerequisite comes first.
+
+**Use when:**
+
+- The graph is directed.
+- You have prerequisites or dependencies.
+- You need to detect a cycle in directed graph.
+
+**Do not use when:**
+
+- The graph is undirected.
+- Cycles are allowed and no valid ordering exists.
+
+**Complexity:** `O(n + m)`.
+
+**Common mistakes:**
+
+- Using it on undirected graphs.
+- Forgetting that multiple valid orders can exist.
+- Not checking whether all nodes were processed.
+
+**Solved problem statement:** Given `n` courses and prerequisite pairs `[a, b]` meaning `b` before `a`, return whether all courses can be finished.
+
+```cpp
+bool can_finish(int n, vector<vector<int>>& prerequisites) {
+    vector<vector<int>> g(n);
+    vector<int> indeg(n);
+    for (auto& e : prerequisites) {
+        int a = e[0], b = e[1];
+        g[b].push_back(a);
+        indeg[a]++;
+    }
+
+    queue<int> q;
+    for (int i = 0; i < n; i++) if (indeg[i] == 0) q.push(i);
+
+    int seen = 0;
+    while (!q.empty()) {
+        int u = q.front();
+        q.pop();
+        seen++;
+        for (int v : g[u]) {
+            if (--indeg[v] == 0) q.push(v);
+        }
+    }
+    return seen == n;
+}
+```
+
+**Practice links:**
+
+- [Course Schedule](https://leetcode.com/problems/course-schedule/)
+- [Course Schedule II](https://leetcode.com/problems/course-schedule-ii/)
+- [Find Eventual Safe States](https://leetcode.com/problems/find-eventual-safe-states/)
+
+### Pack 14: DSU / Union Find
+
+**Plain idea:** Keep track of groups. Quickly ask whether two items are already in the same group.
+
+**Use when:**
+
+- Components merge over time.
+- You need connectivity under edge additions.
+- You are building MST with Kruskal.
+
+**Do not use when:**
+
+- Edges are deleted online. Basic DSU cannot split groups.
+- You need shortest paths.
+
+**Complexity:** Almost `O(1)` per operation with path compression and union by size.
+
+**Common mistakes:**
+
+- Forgetting path compression.
+- Not unioning by size/rank.
+- Trying to remove edges from normal DSU.
+
+**Solved problem statement:** Given an undirected graph, count connected components.
+
+```cpp
+struct DSU_simple {
+    vector<int> p, sz;
+    DSU_simple(int n) : p(n), sz(n, 1) {
+        iota(p.begin(), p.end(), 0);
+    }
+    int find(int x) {
+        if (p[x] == x) return x;
+        return p[x] = find(p[x]);
+    }
+    bool unite(int a, int b) {
+        a = find(a), b = find(b);
+        if (a == b) return false;
+        if (sz[a] < sz[b]) swap(a, b);
+        p[b] = a;
+        sz[a] += sz[b];
+        return true;
+    }
+};
+
+int count_components(int n, vector<vector<int>>& edges) {
+    DSU_simple dsu(n);
+    int comps = n;
+    for (auto& e : edges) {
+        if (dsu.unite(e[0], e[1])) comps--;
+    }
+    return comps;
+}
+```
+
+**Practice links:**
+
+- [Number of Provinces](https://leetcode.com/problems/number-of-provinces/)
+- [Redundant Connection](https://leetcode.com/problems/redundant-connection/)
+- [Accounts Merge](https://leetcode.com/problems/accounts-merge/)
+
+### Pack 15: Dijkstra's Algorithm
+
+**Plain idea:** Always finalize the unvisited node with the smallest known distance.
+
+**Use when:**
+
+- You need shortest paths.
+- Edge weights are nonnegative.
+- Graph can be directed or undirected.
+
+**Do not use when:**
+
+- Any edge weight is negative. Use Bellman-Ford or another method.
+- All edges are weight `1`. BFS is simpler and faster.
+
+**Complexity:** `O((n + m) log n)` with priority queue.
+
+**Common mistakes:**
+
+- Using Dijkstra with negative weights.
+- Not skipping old priority queue entries.
+- Overflowing distance.
+
+**Solved problem statement:** Given weighted directed edges, return shortest distance from source to every node.
+
+```cpp
+vector<long long> shortest_paths(int n, vector<vector<pair<int, int>>>& g, int src) {
+    const long long INF = 4e18;
+    vector<long long> dist(n, INF);
+    priority_queue<pair<long long, int>, vector<pair<long long, int>>, greater<>> pq;
+    dist[src] = 0;
+    pq.push({0, src});
+
+    while (!pq.empty()) {
+        auto [d, u] = pq.top();
+        pq.pop();
+        if (d != dist[u]) continue;
+        for (auto [v, w] : g[u]) {
+            if (dist[v] > d + w) {
+                dist[v] = d + w;
+                pq.push({dist[v], v});
+            }
+        }
+    }
+    return dist;
+}
+```
+
+**Practice links:**
+
+- [Network Delay Time](https://leetcode.com/problems/network-delay-time/)
+- [Path With Minimum Effort](https://leetcode.com/problems/path-with-minimum-effort/)
+- [Cheapest Flights Within K Stops](https://leetcode.com/problems/cheapest-flights-within-k-stops/)
+
+### Pack 16: Fenwick Tree
+
+**Plain idea:** Store partial sums in a clever way so point updates and prefix sums are both fast.
+
+**Use when:**
+
+- You need point update and range sum.
+- You need frequency counts with prefix queries.
+- You need inversion count or order counting.
+
+**Do not use when:**
+
+- You need range minimum with arbitrary updates.
+- You need complex range operations. Segment tree is more flexible.
+
+**Complexity:** Update `O(log n)`, query `O(log n)`, memory `O(n)`.
+
+**Common mistakes:**
+
+- Fenwick tree is internally 1-based.
+- Infinite loop if index is not incremented before update.
+- Querying wrong inclusive range.
+
+**Solved problem statement:** Support update index `i` by adding `x`, and query sum from `l` to `r`.
+
+```cpp
+struct Fenwick_pack {
+    int n;
+    vector<long long> bit;
+    Fenwick_pack(int n) : n(n), bit(n + 1, 0) {}
+
+    void add(int idx, long long val) {
+        for (idx++; idx <= n; idx += idx & -idx) bit[idx] += val;
+    }
+
+    long long prefix_sum(int idx) {
+        long long ans = 0;
+        for (idx++; idx > 0; idx -= idx & -idx) ans += bit[idx];
+        return ans;
+    }
+
+    long long range_sum(int l, int r) {
+        return prefix_sum(r) - (l == 0 ? 0 : prefix_sum(l - 1));
+    }
+};
+```
+
+**Practice links:**
+
+- [Range Sum Query - Mutable](https://leetcode.com/problems/range-sum-query-mutable/)
+- [Count of Smaller Numbers After Self](https://leetcode.com/problems/count-of-smaller-numbers-after-self/)
+- [Reverse Pairs](https://leetcode.com/problems/reverse-pairs/)
+
+### Pack 17: Segment Tree
+
+**Plain idea:** Split the array into ranges. Each node stores the answer for one range.
+
+**Use when:**
+
+- You need range query plus updates.
+- Operation is sum, min, max, gcd, xor, or a custom merge.
+- Fenwick tree is not flexible enough.
+
+**Do not use when:**
+
+- Array is static and sparse table is simpler.
+- You only need prefix sums.
+
+**Complexity:** Build `O(n)`, update `O(log n)`, query `O(log n)`.
+
+**Common mistakes:**
+
+- Wrong overlap checks.
+- Forgetting to merge after update.
+- Making tree size too small.
+
+**Solved problem statement:** Support point assignment and range sum query.
+
+```cpp
+struct SegmentTree_pack {
+    int n;
+    vector<long long> tree;
+
+    SegmentTree_pack(vector<int>& a) {
+        n = a.size();
+        tree.assign(4 * n, 0);
+        build(1, 0, n - 1, a);
+    }
+
+    void build(int node, int l, int r, vector<int>& a) {
+        if (l == r) {
+            tree[node] = a[l];
+            return;
+        }
+        int mid = (l + r) / 2;
+        build(node * 2, l, mid, a);
+        build(node * 2 + 1, mid + 1, r, a);
+        tree[node] = tree[node * 2] + tree[node * 2 + 1];
+    }
+
+    void update(int node, int l, int r, int idx, int val) {
+        if (l == r) {
+            tree[node] = val;
+            return;
+        }
+        int mid = (l + r) / 2;
+        if (idx <= mid) update(node * 2, l, mid, idx, val);
+        else update(node * 2 + 1, mid + 1, r, idx, val);
+        tree[node] = tree[node * 2] + tree[node * 2 + 1];
+    }
+
+    long long query(int node, int l, int r, int ql, int qr) {
+        if (qr < l || r < ql) return 0;
+        if (ql <= l && r <= qr) return tree[node];
+        int mid = (l + r) / 2;
+        return query(node * 2, l, mid, ql, qr)
+             + query(node * 2 + 1, mid + 1, r, ql, qr);
+    }
+};
+```
+
+**Practice links:**
+
+- [Range Sum Query - Mutable](https://leetcode.com/problems/range-sum-query-mutable/)
+- [My Calendar I](https://leetcode.com/problems/my-calendar-i/)
+- [Count of Range Sum](https://leetcode.com/problems/count-of-range-sum/)
+
+### Pack 18: Trie
+
+**Plain idea:** Store strings as paths in a tree, one character at a time.
+
+**Use when:**
+
+- You need prefix search.
+- You need many dictionary words.
+- You need word matching on grids or streams.
+
+**Do not use when:**
+
+- You only need exact lookup. Hash set is simpler.
+- Alphabet is huge and memory is tight.
+
+**Complexity:** Insert/search `O(length_of_word)`.
+
+**Common mistakes:**
+
+- Not marking word endings.
+- Assuming all characters are lowercase.
+- Memory explosion for large alphabets.
+
+**Solved problem statement:** Implement insert, exact search, and prefix search.
+
+```cpp
+struct Trie_pack {
+    struct Node {
+        int next[26];
+        bool end = false;
+        Node() { fill(next, next + 26, -1); }
+    };
+    vector<Node> t{Node()};
+
+    void insert(const string& word) {
+        int u = 0;
+        for (char ch : word) {
+            int c = ch - 'a';
+            if (t[u].next[c] == -1) {
+                t[u].next[c] = t.size();
+                t.push_back(Node());
+            }
+            u = t[u].next[c];
+        }
+        t[u].end = true;
+    }
+
+    bool search(const string& word) {
+        int u = 0;
+        for (char ch : word) {
+            int c = ch - 'a';
+            if (t[u].next[c] == -1) return false;
+            u = t[u].next[c];
+        }
+        return t[u].end;
+    }
+
+    bool starts_with(const string& pref) {
+        int u = 0;
+        for (char ch : pref) {
+            int c = ch - 'a';
+            if (t[u].next[c] == -1) return false;
+            u = t[u].next[c];
+        }
+        return true;
+    }
+};
+```
+
+**Practice links:**
+
+- [Implement Trie](https://leetcode.com/problems/implement-trie-prefix-tree/)
+- [Word Search II](https://leetcode.com/problems/word-search-ii/)
+- [Design Add and Search Words Data Structure](https://leetcode.com/problems/design-add-and-search-words-data-structure/)
+
+### Pack 19: KMP String Matching
+
+**Plain idea:** When a pattern match fails, do not restart from zero. Reuse the longest prefix that is also a suffix.
+
+**Use when:**
+
+- You need exact pattern matching in linear time.
+- You need border, prefix, or repetition logic.
+
+**Do not use when:**
+
+- You only need one small search; built-in `find` may be enough.
+- You need many patterns. Use Aho-Corasick.
+
+**Complexity:** `O(n + m)`.
+
+**Common mistakes:**
+
+- Building prefix function on the wrong string.
+- Off-by-one when converting match position.
+- Confusing prefix function with Z-function.
+
+**Solved problem statement:** Return the first index where pattern appears in text, or `-1`.
+
+```cpp
+vector<int> prefix_function_pack(const string& s) {
+    vector<int> pi(s.size());
+    for (int i = 1; i < (int)s.size(); i++) {
+        int j = pi[i - 1];
+        while (j > 0 && s[i] != s[j]) j = pi[j - 1];
+        if (s[i] == s[j]) j++;
+        pi[i] = j;
+    }
+    return pi;
+}
+
+int first_occurrence_kmp(const string& text, const string& pat) {
+    if (pat.empty()) return 0;
+    string combined = pat + "#" + text;
+    vector<int> pi = prefix_function_pack(combined);
+    int m = pat.size();
+    for (int i = m + 1; i < (int)combined.size(); i++) {
+        if (pi[i] == m) return i - 2 * m;
+    }
+    return -1;
+}
+```
+
+**Practice links:**
+
+- [Find the Index of the First Occurrence in a String](https://leetcode.com/problems/find-the-index-of-the-first-occurrence-in-a-string/)
+- [Repeated Substring Pattern](https://leetcode.com/problems/repeated-substring-pattern/)
+- [Shortest Palindrome](https://leetcode.com/problems/shortest-palindrome/)
+
+### Pack 20: Bit Manipulation
+
+**Plain idea:** Use binary bits directly. A number can represent a set, flags, or choices.
+
+**Use when:**
+
+- `n <= 20` suggests subsets.
+- You need xor tricks.
+- You need fast set/check/toggle operations.
+
+**Do not use when:**
+
+- The bit count is too large for integer masks.
+- Simpler arrays make code clearer.
+
+**Complexity:** Bit operations are usually `O(1)`. Enumerating masks is `O(2^n)`.
+
+**Common mistakes:**
+
+- Writing `1 << k` when `k >= 31`; use `1LL << k`.
+- Confusing xor with addition.
+- Forgetting operator precedence.
+
+**Solved problem statement:** Given numbers where every value appears twice except one, return the single value.
+
+```cpp
+int single_number(vector<int>& nums) {
+    int ans = 0;
+    for (int x : nums) ans ^= x;
+    return ans;
+}
+```
+
+**Practice links:**
+
+- [Single Number](https://leetcode.com/problems/single-number/)
+- [Subsets](https://leetcode.com/problems/subsets/)
+- [Counting Bits](https://leetcode.com/problems/counting-bits/)
+
+### Pack 21: Number Theory Basics
+
+**Plain idea:** Use math properties of divisibility, primes, gcd, and modulo.
+
+**Use when:**
+
+- Problem mentions prime, gcd, lcm, divisibility, modulo, factors, or combinations.
+- You need fast repeated multiplication under modulo.
+
+**Do not use when:**
+
+- Direct simulation is enough and constraints are small.
+- You assume modulo division works without modular inverse.
+
+**Complexity:** GCD is `O(log min(a, b))`. Sieve is `O(n log log n)`.
+
+**Common mistakes:**
+
+- Dividing under modulo without inverse.
+- Not normalizing negative modulo.
+- Overflowing during multiplication.
+
+**Solved problem statement:** Count primes less than `n`.
+
+```cpp
+int count_primes(int n) {
+    if (n <= 2) return 0;
+    vector<bool> isPrime(n, true);
+    isPrime[0] = isPrime[1] = false;
+    for (long long i = 2; i * i < n; i++) {
+        if (!isPrime[i]) continue;
+        for (long long j = i * i; j < n; j += i) {
+            isPrime[j] = false;
+        }
+    }
+    int ans = 0;
+    for (bool x : isPrime) ans += x;
+    return ans;
+}
+```
+
+**Practice links:**
+
+- [Count Primes](https://leetcode.com/problems/count-primes/)
+- [Pow(x, n)](https://leetcode.com/problems/powx-n/)
+- [Greatest Common Divisor of Strings](https://leetcode.com/problems/greatest-common-divisor-of-strings/)
+
+### Pack 22: Minimum Spanning Tree
+
+**Plain idea:** Connect all nodes with minimum total edge cost without cycles.
+
+**Use when:**
+
+- You need cheapest way to connect everything.
+- Graph is undirected and weighted.
+- Keywords include network, connect, minimum total cost.
+
+**Do not use when:**
+
+- You need shortest path from one node to another. Use shortest path algorithms.
+- Graph is directed. MST is for undirected graphs.
+
+**Complexity:** Kruskal is `O(m log m)`.
+
+**Common mistakes:**
+
+- Using MST for shortest path.
+- Forgetting graph must be connected, or checking if MST has `n - 1` edges.
+- Sorting edges incorrectly.
+
+**Solved problem statement:** Given points on a plane, connect all points with minimum total Manhattan distance.
+
+```cpp
+int min_cost_connect_points(vector<vector<int>>& points) {
+    int n = points.size();
+    vector<array<int, 3>> edges;
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            int w = abs(points[i][0] - points[j][0]) + abs(points[i][1] - points[j][1]);
+            edges.push_back({w, i, j});
+        }
+    }
+    sort(edges.begin(), edges.end());
+
+    DSU_simple dsu(n);
+    int cost = 0, used = 0;
+    for (auto [w, u, v] : edges) {
+        if (dsu.unite(u, v)) {
+            cost += w;
+            used++;
+            if (used == n - 1) break;
+        }
+    }
+    return cost;
+}
+```
+
+**Practice links:**
+
+- [Min Cost to Connect All Points](https://leetcode.com/problems/min-cost-to-connect-all-points/)
+- [Connecting Cities With Minimum Cost](https://leetcode.com/problems/connecting-cities-with-minimum-cost/)
+- [Find Critical and Pseudo-Critical Edges in Minimum Spanning Tree](https://leetcode.com/problems/find-critical-and-pseudo-critical-edges-in-minimum-spanning-tree/)
+
+### Pack 23: Advanced Graphs in Simple Words
+
+Use this pack after BFS, DFS, DSU, and shortest paths.
+
+| Topic | Simple use | First thing to remember |
+|---|---|---|
+| SCC | Group directed nodes that can all reach each other. | Compress SCCs into a DAG. |
+| Bridges | Find edges that disconnect an undirected graph if removed. | Use DFS entry time and low-link values. |
+| Articulation points | Find vertices that disconnect graph if removed. | Similar to bridges, but vertex-based. |
+| 2-SAT | Solve true/false constraints. | Convert clauses to implications, then use SCC. |
+| Flow | Push as much quantity as possible through capacities. | Residual graph tells where more flow can still go. |
+| Matching | Pair items under rules. | Bipartite matching is easier than general matching. |
+
+**Solved problem statement:** Given prerequisite implications in a directed graph, group mutually reachable nodes using SCC. If two nodes are in the same group, each can reach the other.
+
+```cpp
+struct SCC_pack {
+    int n, timer = 0, compCount = 0;
+    vector<vector<int>> g;
+    vector<int> disc, low, comp, st;
+    vector<bool> inStack;
+
+    SCC_pack(vector<vector<int>> graph) : n(graph.size()), g(move(graph)) {
+        disc.assign(n, -1);
+        low.assign(n, 0);
+        comp.assign(n, -1);
+        inStack.assign(n, false);
+        for (int i = 0; i < n; i++) {
+            if (disc[i] == -1) dfs(i);
+        }
+    }
+
+    void dfs(int u) {
+        disc[u] = low[u] = timer++;
+        st.push_back(u);
+        inStack[u] = true;
+
+        for (int v : g[u]) {
+            if (disc[v] == -1) {
+                dfs(v);
+                low[u] = min(low[u], low[v]);
+            } else if (inStack[v]) {
+                low[u] = min(low[u], disc[v]);
+            }
+        }
+
+        if (low[u] == disc[u]) {
+            while (true) {
+                int v = st.back();
+                st.pop_back();
+                inStack[v] = false;
+                comp[v] = compCount;
+                if (v == u) break;
+            }
+            compCount++;
+        }
+    }
+};
+```
+
+**Practice links:**
+
+- [Critical Connections in a Network](https://leetcode.com/problems/critical-connections-in-a-network/)
+- [Possible Bipartition](https://leetcode.com/problems/possible-bipartition/)
+- [Maximum Students Taking Exam](https://leetcode.com/problems/maximum-students-taking-exam/)
+
+### Pack 24: How to Use LeetCode Links
+
+Use links as practice, not as the main explanation. For every linked problem:
+
+1. Identify the topic before coding.
+2. Write the brute force idea first.
+3. Explain why brute force is too slow.
+4. Write the optimized idea in plain English.
+5. Code from memory.
+6. Test edge cases manually.
+7. Compare with the template only after trying.
+
+When a problem can be solved by many methods, write down all valid methods. Example: `Range Sum Query - Mutable` can be solved by Fenwick tree or segment tree. `Course Schedule` can be solved by topological sort or DFS cycle detection.
 
 
 

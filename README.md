@@ -6,14 +6,14 @@ This repository collects long-form Markdown study notes and roadmaps for program
 
 | File | Focus |
 | --- | --- |
-| [Complete_DSA_Algorithms_CPP.md](Complete_DSA_Algorithms_CPP.md) | Data structures and algorithms in C++, from foundations through advanced competitive programming topics. |
+| [Complete_DSA_Algorithms_CPP.md](Complete_DSA_Algorithms_CPP.md) | Data structures and algorithms in C++, with beginner-friendly topic packs, solved examples, practice links, and advanced competitive programming templates. |
 | [complete_python_handbook.md](complete_python_handbook.md) | Python handbook covering core language concepts, practical patterns, and deeper learning material. |
 | [ML_AI_GenAI_RAG_Interview_Roadmap.md](ML_AI_GenAI_RAG_Interview_Roadmap.md) | Interview and study roadmap for machine learning, AI, GenAI, and retrieval-augmented generation. |
 
 ## Suggested Study Order
 
 1. Start with `complete_python_handbook.md` if you want stronger implementation fundamentals.
-2. Move through `Complete_DSA_Algorithms_CPP.md` topic by topic, writing code for each algorithm.
+2. Move through Section 0 of `Complete_DSA_Algorithms_CPP.md` first, then use the later sections as deeper reference.
 3. Use `ML_AI_GenAI_RAG_Interview_Roadmap.md` as a roadmap for AI/ML interview preparation and project revision.
 
 ## Notes
